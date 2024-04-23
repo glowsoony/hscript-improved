@@ -11,7 +11,8 @@ class Main {
 		#if BENCHMARK
 		Sys.println("Running benchmark");
 
-		new Benchmark("Test", 1000);
+		//new Benchmark("Test", 1000);
+		new TestBenchmark();
 		#else
 		Sys.println("Beginning tests");
 		if(!Main.SHOW_KNOWN_BUGS) {
@@ -34,6 +35,7 @@ class Main {
 		runTest("String", new StringCase());
 		runTest("StringBuf", new StringBufCase());
 		runTest("StringTools", new StringToolsCase());
+		runTest("SwitchStatement", new SwitchCase());
 		// TODO: UnicodeCase.hx?
 		// TODO: UnicodeStringCase.hx?
 		Util.printTestResults();

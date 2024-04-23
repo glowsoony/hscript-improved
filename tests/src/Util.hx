@@ -75,14 +75,14 @@ class Util {
 	}
 
 	public static function printTestResults() {
-		Sys.println("-----------------------------RESULTS-----------------------------");
+		Sys.println(Util.getTitle('RESULTS'));
 		Sys.println("Total Units: " + totalTestUnits);
 		Sys.println("Total tests passed: " + passedTestUnits);
 		Sys.println("Total tests failed: " + failedTestUnits);
 		if(skippedKnownBugs > 0)
 			Sys.println("Skipped known bugs: " + skippedKnownBugs);
 		//Sys.println("Finished unit tests " + currentTestPath.pop());
-		Sys.println("-----------------------------RESULTS-----------------------------");
+		Sys.println(Util.getTitle('RESULTS'));
 	}
 
 	public static function parse(str:String) {
@@ -162,9 +162,8 @@ class Util {
 	}
 
 	public static function deepCompareArrays(a1: Array<Dynamic>, a2: Array<Dynamic>): Bool {
-		if (a1.length != a2.length) {
+		if (a1.length != a2.length)
 			return false;
-		}
 
 		for (i in 0...a1.length) {
 			var item1 = a1[i];
@@ -173,11 +172,25 @@ class Util {
 			if (Std.isOfType(item1, Array) && Std.isOfType(item2, Array)) {
 				if (!deepCompareArrays(item1, item2))
 					return false;
-			} else if (item1 != item2) {
+			} else if (item1 != item2)
 				return false;
-			}
 		}
-
 		return true;
+	}
+
+	public static function roundDecimal(Value:Float, Precision:Int):Float {
+		var mult:Float = 1;
+		for (i in 0...Precision)
+			mult *= 10;
+		return Math.fround(Value * mult) / mult;
+	}
+
+	public inline static function roundWith(Value:Float, Mult:Int):Float {
+		return Math.fround(Value * Mult) / Mult;
+	}
+
+	public static function getTitle(title:String, ?dashsLen:Int = 46) {
+		var l = StringTools.lpad("", "-", Std.int((dashsLen - title.length - 2)/2));
+		return l + ' $title ' + l;
 	}
 }
