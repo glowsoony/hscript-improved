@@ -13,7 +13,13 @@ class Util {
 	}
 
 	public static function assertEq(value:Dynamic, expected:Dynamic, message:String) {
-		if (value == expected) {
+		var passed = value == expected;
+		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
+			if (deepCompareArrays(value, expected))
+				passed = true;
+		}
+
+		if (passed) {
 			passedTestUnits++;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
@@ -22,7 +28,15 @@ class Util {
 	}
 
 	public static function assertNeq(value:Dynamic, expected:Dynamic, message:String) {
-		if (value != expected) {
+		var passed = value != expected;
+		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
+			if (!deepCompareArrays(value, expected))
+				passed = true;
+		}
+
+		// WARNING THIS MIGHT NOT WORK
+
+		if (passed) {
 			passedTestUnits++;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
@@ -120,5 +134,25 @@ class Util {
 		//	Logs.logText(fn, GREEN),
 		//	Logs.logText(err, RED)
 		//], ERROR);
+	}
+
+	public static function deepCompareArrays(a1: Array<Dynamic>, a2: Array<Dynamic>): Bool {
+		if (a1.length != a2.length) {
+			return false;
+		}
+
+		for (i in 0...a1.length) {
+			var item1 = a1[i];
+			var item2 = a2[i];
+
+			if (Std.isOfType(item1, Array) && Std.isOfType(item2, Array)) {
+				if (!deepCompareArrays(item1, item2))
+					return false;
+			} else if (item1 != item2) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 }

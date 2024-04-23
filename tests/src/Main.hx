@@ -14,10 +14,15 @@ class Main {
 		new Benchmark("Test", 1000);
 		#else
 		Sys.println("Beginning tests");
+		if(!Main.SHOW_KNOWN_BUGS) {
+			Sys.println("Hiding known bugs [TEMPORARY]");
+		}
 		runTest("Array", new ArrayCase());
 		runTest("BinOp", new BinOpCase());
 		runTest("EvalOrder", new EvalOrderCase());
 		runTest("Math", new MathCase());
+		runTest("Float", new FloatCase());
+		runTest("IntIterator", new IntIteratorCase());
 		runTest("Misc", new MiscCase());
 		Util.printTestResults();
 		#end
@@ -25,7 +30,7 @@ class Main {
 
 	#if !BENCHMARK
 	static function runTest(name:String, test:TestCase) {
-		Util.startUnitTest("Math");
+		Util.startUnitTest(name);
 		test.setup();
 		test.run();
 		test.teardown();

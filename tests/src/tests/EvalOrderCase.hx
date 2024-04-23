@@ -5,10 +5,6 @@ class EvalOrderCase extends TestCase {
 		super.setup();
 
 		headerCode = '
-var a = 1;
-var b = 2;
-var c = 3;
-
 function func(i1:Dynamic, i2:Dynamic, i3:Dynamic) {
 	return i1 + ";" + i2 + ";" + i3;
 }
@@ -26,14 +22,12 @@ function func(i1:Dynamic, i2:Dynamic, i3:Dynamic) {
 			return i1 + ";" + i2 + ";" + i3;
 		}
 
-		assertEq("func(a, b, c)", func(a, b, c));
-
 		clearPrevious = true;
 
 		var i = 0;
 		assertEq("var i = 0; func(i++, i++, i++)", func(i++, i++, i++));
 		var i = 0;
-		assertEq("var i = 0; var a = [i++, i++, i++]; a.join(';')", [i++, i++, i++].join(";"));
+		assertEq("var i = 0; [i++, i++, i++].join(';')", [i++, i++, i++].join(";"));
 
 		var i = 0;
 		var obj = {
@@ -56,9 +50,6 @@ function func(i1:Dynamic, i2:Dynamic, i3:Dynamic) {
 var buf:Array<Int> = [];
 
 function a() {
-	trace("cock");
-	trace(buf);
-	trace(buf.push);
 	buf.push(1);
 	return 1;
 }
@@ -91,13 +82,6 @@ function f() {
 function begin() {
 	buf = [];
 	return function() {
-		return buf.join("_");
-	}
-}
-
-function begin2() {
-	buf = [];
-	return () -> {
 		return buf.join("_");
 	}
 }
@@ -142,34 +126,151 @@ function begin() {
 	}
 }
 
-function begin2() {
-	buf = [];
-	return () -> {
-		return buf.join("_");
+		// &&
+
+		var end = begin();
+		(a() + b()) >= 0 && (c() + d()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 0 && (c() + d()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 99 && (c() + d()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 99 && (c() + d()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 0 && (c() + d()) >= 0 && (e() + f()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 0 && (c() + d()) >= 0 && (e() + f()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 99 && (c() + d()) >= 0 && (e() + f()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 99 && (c() + d()) >= 0 && (e() + f()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 0 && (c() + d()) >= 99 && (e() + f()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 0 && (c() + d()) >= 99 && (e() + f()) >= 0;
+		end()', end());
+
+		// ||
+
+		var end = begin();
+		(a() + b()) >= 0 || (c() + d()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 0 || (c() + d()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 99 || (c() + d()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 99 || (c() + d()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 0 || (c() + d()) >= 0 || (e() + f()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 0 || (c() + d()) >= 0 || (e() + f()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 99 || (c() + d()) >= 0 || (e() + f()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 99 || (c() + d()) >= 0 || (e() + f()) >= 0;
+		end()', end());
+
+		var end = begin();
+		(a() + b()) >= 99 || (c() + d()) >= 99 || (e() + f()) >= 0;
+		assertEq('var end = begin();
+		(a() + b()) >= 99 || (c() + d()) >= 99 || (e() + f()) >= 0;
+		end()', end());
+
+headerCode += '
+function arr(x, y) {
+	return [];
+}
+
+function idx(x, y) {
+	return 0;
+}
+
+function f1() {
+	buf.push(1);
+	return function(i) { };
+}
+
+function f2() {
+	buf.push(2);
+	return 2;
+}
+';
+		// []
+
+function arr(x, y) {
+	return [];
+}
+
+function idx(x, y) {
+	return 0;
+}
+
+function f1() {
+	buf.push(1);
+	return function(i) { };
+}
+
+function f2() {
+	buf.push(2);
+	return 2;
+}
+
+		var end = begin();
+		var _ = (arr(a(), b()))[idx(c(), d())];
+		assertEq('var end = begin();
+		var _ = (arr(a(), b()))[idx(c(), d())];
+		end()', end());
+
+headerCode += '
+var d:Dynamic = { f1: f1 };
+
+function f3() {
+	buf.push(3);
+	d.f1 = function f3df1(i) {
+		buf.push(4);
+		return 4;
 	}
+	return 3;
+}
+';
+
+var d:Dynamic = { f1: f1 };
+
+function f3() {
+	buf.push(3);
+	d.f1 = function(i) {
+		buf.push(4);
+		return 4;
+	}
+	return 3;
 }
 
 		if(Main.SHOW_KNOWN_BUGS) {
 			var end = begin();
-			(a() + b()) >= 0 && (c() + d()) >= 0;
+			d.f1()(f3());
+			d.f1(f2());
 			assertEq('var end = begin();
-			(a() + b()) >= 0 && (c() + d()) >= 0;
+			//var func = d.f1();
+			//func(f3());
+
+			d.f1()(f3());
+			d.f1(f2());
 			end()', end());
 		}
-
-		var end = begin();
-		var _ = (a() + b()) >= 0 && (c() + d()) >= 0;
-		assertEq('var end = begin();
-		var test = (a() + b()) >= 0 && (c() + d()) >= 0;
-		trace(buf);
-		end()', end());
-
-		var end = begin2();
-		var _ = (a() + b()) >= 0 && (c() + d()) >= 0;
-		assertEq('var end = begin2();
-		var test = (a() + b()) >= 0 && (c() + d()) >= 0;
-		trace(buf, a());
-		end()', end());
 	}
 
 	override function teardown() {
