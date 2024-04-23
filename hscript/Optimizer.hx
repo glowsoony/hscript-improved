@@ -280,21 +280,22 @@ class Optimizer {
 					}
 				}
 
+				// Possible bugs here
 				if(isNumber(e1) && !isConstant(e2)) {
 					var c1 = getNumber(e1);
-					if(c1 == 0 && op == "+")
+					if(compareNumber(c1, 0) && op == "+")
 						return mk(Tools.expr(e2), s);
-					//if(c1 == 0 && op == "*")
+					//if(compareNumber(c1, 0) && op == "*")
 					//	return mk(convertConstant(0), s);
 				}
 
 				if(!isConstant(e1) && isNumber(e2)) {
 					var c2 = getNumber(e2);
-					if(op == "+" && c2 == 0)
+					if(op == "+" && compareNumber(c2, 0))
 						return mk(Tools.expr(e1), s);
-					if(op == "/" && c2 == 1)
+					if(op == "/" && compareNumber(c2, 1))
 						return mk(Tools.expr(e1), s);
-					//if(op == "*" && c2 == 0)
+					//if(op == "*" && compareNumber(c2, 0))
 					//	return mk(convertConstant(0), s);
 				}
 
@@ -319,6 +320,26 @@ class Optimizer {
 				Sys.println("Unknown expr: " + e);
 		}
 		return s;
+	}
+
+	static function compareNumber(a:Dynamic, b:Dynamic):Bool {
+		return switch(Type.typeof(a)) {
+			case TInt:
+				var a:Int = cast a;
+				switch(Type.typeof(b)) {
+					case TInt: a == cast(b, Int);
+					case TFloat: a == cast(b, Float);
+					default: false;
+				}
+			case TFloat:
+				var a:Float = cast a;
+				switch(Type.typeof(b)) {
+					case TInt: a == cast(b, Int);
+					case TFloat: a == cast(b, Float);
+					default: false;
+				}
+			default: false;
+		}
 	}
 
 	static function hasDecl(e:Expr):Bool {

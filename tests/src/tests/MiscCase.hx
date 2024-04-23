@@ -149,6 +149,13 @@ class MiscCase extends TestCase {
 
 		assertEq("[55,66,77][1]",66);
 
+		assertEq("{
+			var a = 1;
+			function b() { return a; }
+			a = 2;
+			b();
+		}", 2);
+
 	}
 
 	override function teardown() {

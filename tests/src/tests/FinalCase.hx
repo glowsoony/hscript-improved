@@ -38,6 +38,12 @@ class FinalCase extends TestCase {
 		Util.parse("openCodesList(false, codesOpened ? false : true, previousOpen != open ? true : false);");
 		Util.parse("openCodesList(false, 'HELLO' ? false : false, 'WORLD' ? true : true);");
 		Util.parse('FlxTween.tween(newSprite, {"scale.x": 1, "scale.y": 1, alpha: 1, angle: 0}, 0.3, {ease: FlxEase.qaudInOut});');
+		Util.parse('
+		bloomShader.dim = dim = .8 + (.3 * FlxMath.fastSin(__totalTime));
+		bloomShader.size = size = 18 + (8 * FlxMath.fastSin(__totalTime));
+		');
+
+		Util.parse('sprite.setPosition(codesList.x + (sprite.ID % 2 == 1 ? 240 : 67),codesList.y + (15 * sprite.ID) + (sprite.ID%2 == 1 ? 35 : 54));');
 	}
 
 	function assertDisplay(script:String, expected:Dynamic) {
