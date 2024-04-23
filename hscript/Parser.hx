@@ -373,10 +373,10 @@ class Parser {
 				return mk(EFunction([], mk(EReturn(eret),p1)), p1);
 			}
 			push(tk);
-			var oldoo = disableOrOp;
-			disableOrOp = false;
+			//var oldoo = disableOrOp;
+			//disableOrOp = false;
 			var e = parseExpr();
-			disableOrOp = oldoo;
+			//disableOrOp = oldoo;
 			tk = token();
 			switch( tk ) {
 				case TPClose:
@@ -448,10 +448,10 @@ class Parser {
 		case TOp(op):
 			if( op == "-" ) {
 				var start = tokenMin;
-				var oldoo = disableOrOp;
-				disableOrOp = false;
+				//var oldoo = disableOrOp;
+				//disableOrOp = false;
 				var e = parseExpr();
-				disableOrOp = oldoo;
+				//disableOrOp = oldoo;
 				if( e == null )
 					return makeUnop(op,e);
 				switch( expr(e) ) {
@@ -471,10 +471,10 @@ class Parser {
 			tk = token();
 			while( tk != TBkClose && (!resumeErrors || tk != TEof) ) {
 				push(tk);
-				var oldoo = disableOrOp;
-				disableOrOp = false;
+				//var oldoo = disableOrOp;
+				//disableOrOp = false;
 				a.push(parseExpr());
-				disableOrOp = oldoo;
+				//disableOrOp = oldoo;
 				tk = token();
 				if( tk == TComma )
 					tk = token();
@@ -965,7 +965,7 @@ class Parser {
 				var tk = token();
 				switch( tk ) {
 					case TId("case"):
-						var c = { values : [], expr : null };
+						var c = new SwitchCase([], null);
 						cases.push(c);
 						disableOrOp = true;
 						while( true ) {

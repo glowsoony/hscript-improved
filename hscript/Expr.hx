@@ -74,7 +74,7 @@ enum Expr
 	ETry( e : Expr, v : String, t : Null<CType>, ecatch : Expr );
 	EObject( fl : Array<{ name : String, e : Expr }> );
 	ETernary( cond : Expr, e1 : Expr, e2 : Expr );
-	ESwitch( e : Expr, cases : Array<{ values : Array<Expr>, expr : Expr }>, ?defaultExpr : Expr );
+	ESwitch( e : Expr, cases : Array<SwitchCase>, ?defaultExpr : Expr );
 	EDoWhile( cond : Expr, e : Expr);
 	EMeta( name : String, args : Array<Expr>, e : Expr );
 	ECheckType( e : Expr, t : CType );
@@ -82,6 +82,17 @@ enum Expr
 	EImport( c : String, ?asname:String );
 	EClass( name:String, fields:Array<Expr>, ?extend:String, interfaces:Array<String> );
 }
+
+class SwitchCase {
+	public var values : Array<Expr>;
+	public var expr : Expr;
+
+	public function new(values, expr) {
+		this.values = values;
+		this.expr = expr;
+	}
+}
+
 
 //typedef Argument = { name : String, ?t : CType, ?opt : Bool, ?value : Expr };
 class Argument {
@@ -144,7 +155,6 @@ enum Error
 	EInvalidClass( className : String);
 	EAlreadyExistingClass( className : String);
 }
-
 
 enum ModuleDecl {
 	DPackage( path : Array<String> );

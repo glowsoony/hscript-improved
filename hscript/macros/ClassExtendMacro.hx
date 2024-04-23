@@ -262,6 +262,7 @@ class ClassExtendMacro {
 			shadowClass.name = '${cl.name}$CLASS_SUFFIX';
 			var imports = Context.getLocalImports().copy();
 			Utils.setupMetas(shadowClass, imports);
+			Utils.processImport(imports, "hscript.utils.UnsafeReflect", "UnsafeReflect");
 
 			// Adding hscript getters and setters
 
@@ -328,7 +329,7 @@ class ClassExtendMacro {
 						return this.__interp.variables.get("get_" + name)();
 					if (this.__interp.variables.exists(name))
 						return this.__interp.variables.get(name);
-					return Reflect.getProperty(this, name);
+					return UnsafeReflect.getProperty(this, name);
 				}
 			}
 
@@ -352,8 +353,8 @@ class ClassExtendMacro {
 						this.__interp.variables.set(name, val);
 						return val;
 					}
-					Reflect.setProperty(this, name, val);
-					return Reflect.field(this, name);
+					UnsafeReflect.setProperty(this, name, val);
+					return UnsafeReflect.field(this, name);
 				}
 			}
 

@@ -1,5 +1,7 @@
 package hscript;
 
+import hscript.utils.UnsafeReflect;
+
 using StringTools;
 
 class CustomClassHandler implements IHScriptCustomConstructor {
@@ -87,15 +89,15 @@ class TemplateClass implements IHScriptCustomBehaviour {
 			this.__interp.variables.set(name, val);
 			return val;
 		}
-		Reflect.setProperty(this, name, val);
-		return Reflect.field(this, name);
+		UnsafeReflect.setProperty(this, name, val);
+		return UnsafeReflect.field(this, name);
 	}
 	public function hget(name:String):Dynamic {
 		if(this.__interp.variables.exists("get_" + name))
 			return this.__interp.variables.get("get_" + name)();
 		if (this.__interp.variables.exists(name))
 			return this.__interp.variables.get(name);
-		return Reflect.getProperty(this, name);
+		return UnsafeReflect.getProperty(this, name);
 	}
 }
 
