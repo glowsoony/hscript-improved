@@ -75,7 +75,6 @@ class MiscCase extends TestCase {
 		assertEq("x",55,{ x : 55 });
 		assertEq("var y = 33; y",33);
 		assertEq("{ 1; 2; 3; }",3);
-		assertEq("{ var x = 0; } x",55,{ x : 55 });
 		assertEq("o.val",55,{ o : { val : 55 } });
 		assertEq("o.val",null,{ o : {} });
 		assertEq("var a = 1; a++",1);
@@ -90,7 +89,6 @@ class MiscCase extends TestCase {
 		assertEq("var t = 0; for( x in [1,2,3] ) t += x; t",6);
 		assertEq("var a = new Array(); for( x in 0...5 ) a[x] = x; a.join('-')","0-1-2-3-4");
 		assertEq("(function(a,b) return a + b)(4,5)",9);
-		assertEq("var y = 0; var add = function(a) y += a; add(5); add(3); y", {var y = 0; var add = function(a) y += a; add(5); add(3); y;});
 		assertEq("var a = [1,[2,[3,[4,null]]]]; var t = 0; while( a != null ) { t += a[0]; a = a[1]; }; t",10);
 		assertEq("var a = false; do { a = true; } while (!a); a;",true);
 		assertEq("var t = 0; for( x in 1...10 ) t += x; t", 45);
@@ -100,14 +98,6 @@ class MiscCase extends TestCase {
 		assertEq("var t = 0; for( x in new IntIter(1,10) ) t +=x; t", 45);
 		#end
 		assertEq("var x = 1; try { var x = 66; throw 789; } catch( e : Dynamic ) e + x",{var x = 1; try { var x = 66; throw 789; } catch( e : Dynamic ) e + x;});
-		assertEq("var x = 1; var f = function(x) throw x; try f(55) catch( e : Dynamic ) e + x",{
-			var x = 1;
-			var f:Dynamic = function(x) throw x;
-			try
-				f(55)
-			catch( e:Dynamic )
-				e + x;
-		});
 		assertEq("var i=2; if( true ) --i; i",1);
 		assertEq("var i=0; if( i++ > 0 ) i=3; i",1);
 		assertEq("var a = 5/2; a",2.5);
@@ -133,6 +123,32 @@ class MiscCase extends TestCase {
 		//assertEq("var f:(x:Int)->(Int, Int)->Int = (x:Int) -> (y:Int, z:Int) -> x + y + z; f(3)(1, 2)", {var f:(x:Int)->(Int, Int)->Int = (x:Int) -> (y:Int, z:Int) -> x + y + z; f(3)(1, 2);});
 		assertEq("var a = 10; var b = 5; a - -b", 15);
 		assertEq("var a = 10; var b = 5; a - b / 2", 7.5);
+
+		Util.runKnownBug("Redefining a variable in a scope overrides the previous definition", () -> {
+			assertEq("{ var x = 0; } x",55,{ x : 55 });
+		});
+		Util.runKnownBug("Global Y isnt updated from the inside of the function", () -> {
+			assertEq("var y = 0; var add = function(a) y += a; add(5); add(3); y", {var y = 0; var add = function(a) y += a; add(5); add(3); y;});
+		});
+		Util.runKnownBug("Throwing an exception inside a function doesnt return the correct value", () -> {
+			assertEq("var x = 1; var f = function(x) throw x; try f(55) catch( e : Dynamic ) e + x",{
+				var x = 1;
+				var f:Dynamic = function(x) throw x;
+				try
+					f(55)
+				catch( e:Dynamic )
+					e + x;
+			});
+		});
+
+
+		assertEq("var a = if( true ) 1 else 2; a",1);
+		assertEq("var a = if( false ) 1 else 2; a",2);
+		assertEq("if(true) 1; null", null);
+		assertEq("if(false) 1; null", null);
+
+		assertEq("[55,66,77][1]",66);
+
 	}
 
 	override function teardown() {

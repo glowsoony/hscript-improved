@@ -44,6 +44,7 @@ enum Token {
 }
 
 class Parser {
+	public static var optimize = true;
 
 	// config / variables
 	public var line : Int;
@@ -194,7 +195,13 @@ class Parser {
 			push(tk);
 			parseFullExpr(a);
 		}
-		return if( a.length == 1 ) a[0] else mk(EBlock(a),0);
+		var expr = if( a.length == 1 ) a[0] else mk(EBlock(a),0);
+		if(Parser.optimize) {
+			expr = Optimizer.optimize(expr);
+			var printer = new Printer();
+			trace(printer.exprToString(expr));
+		}
+		return expr;
 	}
 
 	function unexpected( tk ) : Dynamic {

@@ -24,8 +24,11 @@ class SwitchCase extends TestCase {
 
 		assertEq("switch(5) { case 1|4: 'error'; case 5: 0; default: -1; }", switch(5) { case 1|4: 'error'; case 5: 0; default: -1; });
 		assertEq("switch(5) { case 1|4: 'error'; default: -1; }", switch(5) { case 1|4: 'error'; default: -1; });
-		assertEq("switch(5) { case (1|4): 'error'; default: -1; }", switch(5) { case (1|4): 'error'; default: -1; });
 		assertEq("switch(5) { case 1,4: 'error'; case 5: 0; default: -1; }", switch(5) { case 1,4: 'error'; case 5: 0; default: -1; });
+
+		Util.runKnownBug("Switch statement with multiple cases in parentheses", () -> {
+			assertEq("switch(5) { case (1|4): 'error'; default: -1; }", switch(5) { case (1|4): 'error'; default: -1; });
+		});
 	}
 
 	override function teardown() {

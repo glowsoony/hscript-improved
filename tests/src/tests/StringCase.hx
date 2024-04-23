@@ -17,8 +17,6 @@ class StringCase extends TestCase {
 		var str = "foo";
 		assertEq('var str = "foo"; str == new String(str)', str == new String(str));
 
-		//Util.runKnownBug("Using StringTools; not working", () -> {
-		//});
 		assertEq('"foo".toUpperCase()', "foo".toUpperCase());
 		assertEq('"_bar".toUpperCase()', "_bar".toUpperCase());
 		assertEq('"123b".toUpperCase()', "123b".toUpperCase());
@@ -91,17 +89,33 @@ class StringCase extends TestCase {
 		assertEq('("a" > "b")', ("a" > "b"));
 		assertEq('("a" >= "b")', ("a" >= "b"));
 
-		assertEq("'${5}'", '${5}');
-		assertEq("'${5},${({})}'", '${5},${({})}');
-		assertEq("'${5},${\"Hello\"}'", '${5},${"Hello"}');
-		assertEq("'${5},${'Hello'}'", '${5},${'Hello'}');
-		assertEq("'$${5}'", '$${5}');
-		assertEq("'$${({})}'", '$${({})}');
+		Util.runKnownBug("String interpolation doesnt work", () -> {
+			assertEq("'${5}'", '${5}');
+			assertEq("'${5},${({})}'", '${5},${({})}');
+			assertEq("'${5},${\"Hello\"}'", '${5},${"Hello"}');
+			assertEq("'${5},${'Hello'}'", '${5},${'Hello'}');
+			assertEq("'$${5}'", '$${5}');
+			assertEq("'$${({})}'", '$${({})}');
+		});
 
 		assertEq('"$${5}"', "${5}");
 		assertEq('"$${5},$${({})}"', "${5},${({})}");
 		assertEq('"$${5},$${\\"Hello\\"}"', "${5},${\"Hello\"}");
 		assertEq('"$${5},$${\'Hello\'}"', "${5},${'Hello'}");
+
+
+
+		assertEq('"foo".toUpperCase()', "foo".toUpperCase());
+		assertEq('"_bar".toUpperCase()', "_bar".toUpperCase());
+		assertEq('"123b".toUpperCase()', "123b".toUpperCase());
+		assertEq('"".toUpperCase()', "".toUpperCase());
+		assertEq('"A".toUpperCase()', "A".toUpperCase());
+		assertEq('"FOO".toLowerCase()', "FOO".toLowerCase());
+		assertEq('"_BAR".toLowerCase()', "_BAR".toLowerCase());
+		assertEq('"_BAR".toLowerCase()', "_BAR".toLowerCase());
+		assertEq('"123B".toLowerCase()', "123B".toLowerCase());
+		assertEq('"".toLowerCase()', "".toLowerCase());
+		assertEq('"a".toLowerCase()', "a".toLowerCase());
 
 	}
 

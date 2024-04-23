@@ -6,22 +6,24 @@ class TestBenchmark extends Benchmark {
 		super("Test", 10000);
 	}
 
-	var hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6);";
+	var hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6); if(true == true) a.push(1);";
 
 	public override function reset() {
 		super.reset();
 		a = [];
 		if(interp != null)
 			interp.variables.remove("a");
-		cacheExpr(hscript);
+		if(expr == null)
+			cacheExpr(hscript);
 	}
 
     public var a:Array<Float> = [];
 	public override function haxeBenchmark() {
 		for (i in 0...1000) a.push(i * 2 + 1 / 6);
+		if(true == true) a.push(1);
 	}
 
 	public override function hscriptBenchmark() {
-		execute(hscript);
+		interp.execute(expr);
 	}
 }

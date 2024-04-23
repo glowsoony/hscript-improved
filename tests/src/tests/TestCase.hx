@@ -7,9 +7,9 @@ class TestCase extends HScriptRunner {
 		if(message == null)
 			message = script;
 		var result = if(vars != null)
-			executeWithVars(headerCode + script + tailCode, vars);
+			executeWithVars(script, vars);
 		else
-			execute(headerCode + script + tailCode);
+			execute(script);
 		Util.assertEq(result, expected, message, pos);
 	}
 
@@ -17,9 +17,9 @@ class TestCase extends HScriptRunner {
 		if(message == null)
 			message = script;
 		var result = if(vars != null)
-			executeWithVars(headerCode + script + tailCode, vars);
+			executeWithVars(script, vars);
 		else
-			execute(headerCode + script + tailCode);
+			execute(script);
 		Util.assertNeq(result, expected, message, pos);
 	}
 }

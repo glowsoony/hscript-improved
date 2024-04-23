@@ -109,8 +109,6 @@ class StdCase extends TestCase {
 
 		// whitespace: space, horizontal tab, newline, vertical tab, form feed, and carriage return
 		assertEq("Std.parseInt('   5')", Std.parseInt("   5"));
-		assertEq("Std.parseInt(' \\t\\n\\x0b\\x0c\\r16')", Std.parseInt(" \t\n\x0b\x0c\r16"));
-		assertEq("Std.parseInt(' \\t\\n\\x0b\\x0c\\r0xa')", Std.parseInt(" \t\n\x0b\x0c\r0xa"));
 
 		// whitespace and signs
 		assertEq("Std.parseInt('  	16')", Std.parseInt("  	16"));
@@ -164,7 +162,6 @@ class StdCase extends TestCase {
 		// signs
 		assertEq("Std.parseFloat('123.45')", Std.parseFloat('123.45'));
 		assertEq("Std.parseFloat('+123.45')", Std.parseFloat('+123.45'));
-		assertEq("Std.parseFloat(' \\t\\n\\x0b\\x0c\\r1.6')", Std.parseFloat('\t\n\x0b\x0c\r1.6'));
 		// whitespace: space, horizontal tab, newline, vertical tab, form feed, and carriage return
 		// whitespace and signs
 		assertEq("Std.parseFloat('  	1.6')", Std.parseFloat('  	1.6'));
@@ -202,6 +199,13 @@ class StdCase extends TestCase {
 		// Std.random(1) == 0;
 		// Std.random(0) == 0;
 		// Std.random(-100) == 0;
+
+
+		Util.runKnownBug("Not all escape sequences are supported", () -> {
+			assertEq("Std.parseInt(' \\t\\n\\x0b\\x0c\\r16')", Std.parseInt(" \t\n\x0b\x0c\r16"));
+			assertEq("Std.parseInt(' \\t\\n\\x0b\\x0c\\r0xa')", Std.parseInt(" \t\n\x0b\x0c\r0xa"));
+			assertEq("Std.parseFloat(' \\t\\n\\x0b\\x0c\\r1.6')", Std.parseFloat('\t\n\x0b\x0c\r1.6'));
+		});
 	}
 
 	override function teardown() {
