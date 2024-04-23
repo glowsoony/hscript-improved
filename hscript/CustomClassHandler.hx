@@ -1,5 +1,6 @@
 package hscript;
 
+import hscript.Interp.DeclaredVar;
 import hscript.utils.UnsafeReflect;
 
 using StringTools;
@@ -13,27 +14,28 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 	public var extend:String;
 	public var interfaces:Array<String>;
 
+	public var cl:Class<Dynamic>;
+
 	public function new(ogInterp:Interp, name:String, fields:Array<Expr>, ?extend:String, ?interfaces:Array<String>) {
 		this.ogInterp = ogInterp;
 		this.name = name;
 		this.fields = fields;
 		this.extend = extend;
 		this.interfaces = interfaces;
+
+		this.cl = extend == null ? TemplateClass : Type.resolveClass('${extend}_HSX');
+		if(cl == null)
+			ogInterp.error(EInvalidClass(extend));
 	}
 
 	public function hnew(args:Array<Dynamic>):Dynamic {
 		var interp = new Interp();
-
 		interp.errorHandler = ogInterp.errorHandler;
 
-		var cl = extend == null ? TemplateClass : Type.resolveClass('${extend}_HSX');
-		if(cl == null)
-			ogInterp.error(EInvalidClass(extend));
-
-		var _class = Type.createInstance(cl, args);
+		var _class:IHScriptCustomClassBehaviour = Type.createInstance(cl, args);
 
 		var __capturedLocals = ogInterp.duplicate(ogInterp.locals);
-		var capturedLocals:Map<String, {r:Dynamic, depth:Int}> = [];
+		var capturedLocals:Map<String, DeclaredVar> = [];
 		for(k=>e in __capturedLocals)
 			if (e != null && e.depth <= 0)
 				capturedLocals.set(k, e);
@@ -51,6 +53,8 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 			}
 		}
 
+		_class.__custom__variables = interp.variables;
+
 		for(expr in fields) {
 			@:privateAccess
 			interp.exprReturn(expr);
@@ -58,16 +62,20 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 
 		interp.variables.set("super", staticHandler);
 
-		_class.__interp = interp;
+		_class.__interp = interp; // TODO: Remove
 		interp.scriptObject = _class;
-
-		var newFunc = interp.variables.get("new");
-		if(newFunc != null) {
-			Reflect.callMethod(null, newFunc, args);
-		}
 
 		for(variable => value in interp.variables) {
 			if(variable == "this") continue;
+
+			if(variable.startsWith("set_") || variable.startsWith("get_")) {
+				_class.__allowSetGet = false;
+			}
+		}
+
+		var newFunc = interp.variables.get("new");
+		if(newFunc != null) {
+			UnsafeReflect.callMethodUnsafe(null, newFunc, args);
 		}
 
 		return _class;
@@ -78,26 +86,41 @@ class CustomClassHandler implements IHScriptCustomConstructor {
 	}
 }
 
-class TemplateClass implements IHScriptCustomBehaviour {
-	public var __interp:Interp;
+class TemplateClass implements IHScriptCustomClassBehaviour implements IHScriptCustomBehaviour {
+	public var __interp:Interp; // TODO: Remove
+	public var __custom__variables:Map<String, Dynamic>;
+	public var __allowSetGet:Bool = true;
 
 	public function hset(name:String, val:Dynamic):Dynamic {
-		if(this.__interp.variables.exists("set_" + name)) {
-			return this.__interp.variables.get("set_" + name)(val); // TODO: Prevent recursion from setting it in the function
-		}
-		if (this.__interp.variables.exists(name)) {
-			this.__interp.variables.set(name, val);
+		if(__allowSetGet && __custom__variables.exists("set_" + name))
+			return __callSetter(name, val);
+		if (__custom__variables.exists(name)) {
+			__custom__variables.set(name, val);
 			return val;
 		}
 		UnsafeReflect.setProperty(this, name, val);
 		return UnsafeReflect.field(this, name);
 	}
 	public function hget(name:String):Dynamic {
-		if(this.__interp.variables.exists("get_" + name))
-			return this.__interp.variables.get("get_" + name)();
-		if (this.__interp.variables.exists(name))
-			return this.__interp.variables.get(name);
+		if(__allowSetGet && __custom__variables.exists("get_" + name))
+			return __callGetter(name);
+		if (__custom__variables.exists(name))
+			return __custom__variables.get(name);
 		return UnsafeReflect.getProperty(this, name);
+	}
+
+	public function __callGetter(name:String):Dynamic {
+		__allowSetGet = false;
+		var v = __custom__variables.get("get_" + name)();
+		__allowSetGet = true;
+		return v;
+	}
+
+	public function __callSetter(name:String, val:Dynamic):Dynamic {
+		__allowSetGet = false;
+		var v = __custom__variables.get("set_" + name)(val);
+		__allowSetGet = true;
+		return v;
 	}
 }
 

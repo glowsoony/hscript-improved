@@ -56,19 +56,45 @@ class UnsafeReflect {
 		#end
 	}
 
-	public inline static function callMethod(o:Dynamic, func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic
+	public #if !cpp inline #end static function callFieldUnsafe(o:Dynamic, field:String, args:Array<Dynamic>):Dynamic {
+		#if cpp
+		untyped {
+			var func:Dynamic = o.__Field(field, untyped __cpp__("::hx::paccDynamic"));
+			untyped func.__SetThis(o);
+			return untyped func.__Run(args);
+		}
+		#else
 		return Reflect.callMethod(o, func, args);
-		/*untyped {
-			if (func != null && func.__GetType() == ObjectType.vtString) {
-				if (o == null)
-					throw cpp.ErrorConstants.invalidObject;
-				func = o.__Field(func, untyped __cpp__("::hx::paccDynamic"));
-			}
+		#end
+	}
+
+	public inline static function callMethod(o:Dynamic, func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic {
+		return Reflect.callMethod(o, func, args);
+	}
+
+	public #if !cpp inline #end static function callMethodSafe(o:Dynamic, func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic {
+		#if cpp
+		untyped {
 			if (func == null)
 				throw cpp.ErrorConstants.nullFunctionPointer;
 			untyped func.__SetThis(o);
 			return untyped func.__Run(args);
-		}*/
+		}
+		#else
+		return Reflect.callMethod(o, func, args);
+		#end
+	}
+
+	public #if !cpp inline #end static function callMethodUnsafe(o:Dynamic, func:haxe.Constraints.Function, args:Array<Dynamic>):Dynamic {
+		#if cpp
+		untyped {
+			untyped func.__SetThis(o);
+			return untyped func.__Run(args);
+		}
+		#else
+		return Reflect.callMethod(o, func, args);
+		#end
+	}
 
 	public inline static function fields(o:Dynamic):Array<String>
 		return Reflect.fields(o);
@@ -133,9 +159,10 @@ class UnsafeReflect {
 		#if cpp
 		if (o == null)
 			return null;
-		if (untyped o.__GetType() == ObjectType.vtString)
+		var t:Int = untyped o.__GetType();
+		if (t == ObjectType.vtString)
 			return o;
-		if (untyped o.__GetType() == ObjectType.vtArray)
+		if (t == ObjectType.vtArray)
 			return untyped o.__Field("copy", untyped __cpp__("::hx::paccDynamic"))();
 		var o2:Dynamic = {};
 		for (f in UnsafeReflect.fields(o))

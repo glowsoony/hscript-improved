@@ -1144,7 +1144,7 @@ class Interp {
 
 	function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic {
 		if(o == CustomClassHandler.staticHandler && _hasScriptObject) {
-			return UnsafeReflect.callMethod(scriptObject, UnsafeReflect.field(scriptObject, "_HX_SUPER__" + f), args);
+			return UnsafeReflect.callMethodUnsafe(scriptObject, UnsafeReflect.field(scriptObject, "_HX_SUPER__" + f), args);
 		}
 		return call(o, get(o, f), args);
 	}
@@ -1153,7 +1153,7 @@ class Interp {
 		if(f == CustomClassHandler.staticHandler) {
 			return null;
 		}
-		return Reflect.callMethod(o, f, args);
+		return UnsafeReflect.callMethodSafe(o, f, args);
 	}
 
 	function cnew(cl:String, args:Array<Dynamic>):Dynamic {
