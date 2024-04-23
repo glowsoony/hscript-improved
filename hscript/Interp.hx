@@ -341,8 +341,10 @@ class Interp {
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
 				if (isMap(arr)) {
-					v = fop(getMapValue(arr, index), expr(e2));
-					setMapValue(arr, index, v);
+					var map = getMap(arr);
+
+					v = fop(map.get(index), expr(e2));
+					map.set(index, v);
 				} else {
 					v = fop(arr[index], expr(e2));
 					arr[index] = v;
@@ -694,8 +696,11 @@ class Interp {
 			case EDoWhile(econd, e):
 				doWhileLoop(econd, e);
 				return null;
-			case EFor(v, it, e, ithv):
-				forLoop(v, it, e, ithv);
+			case EFor(v, it, e):
+				forLoop(v, it, e);
+				return null;
+			case EForKeyValue(v, it, e, ithv):
+				forLoopKeyValue(v, it, e, ithv);
 				return null;
 			case EBreak:
 				throw SBreak;
@@ -844,7 +849,6 @@ class Interp {
 					}
 					for (n in 0...keys.length) {
 						map.set(keys[n], values[n]);
-						//setMapValue(map, keys[n], values[n]);
 					}
 					return map;
 				} else {
@@ -896,7 +900,8 @@ class Interp {
 			case EObject(fl):
 				var o = {};
 				for (f in fl)
-					set(o, f.name, expr(f.e));
+					UnsafeReflect.setField(o, f.name, expr(f.e));
+					//set(o, f.name, expr(f.e));
 				return o;
 			case ETernary(econd, e1, e2):
 				return if (expr(econd) == true) expr(e1) else expr(e2);
@@ -919,9 +924,8 @@ class Interp {
 				return val;
 			case EMeta(a, b, e):
 				var oldAccessor = isBypassAccessor;
-				if(a == ":bypassAccessor") {
+				if(a == ":bypassAccessor")
 					isBypassAccessor = true;
-				}
 				var val = expr(e);
 
 				isBypassAccessor = oldAccessor;
@@ -968,17 +972,11 @@ class Interp {
 		restore(old);
 	}
 
-	function makeIterator(v:Dynamic, ?allowKeyValue = false):Iterator<Dynamic> {
+	function makeIterator(v:Dynamic):Iterator<Dynamic> {
 		#if ((flash && !flash9) || (php && !php7 && haxe_ver < '4.0.0'))
 		if (v.iterator != null)
 			v = v.iterator();
 		#else
-		if(allowKeyValue) {
-			try
-				v = v.keyValueIterator()
-			catch (e:Dynamic) {};
-		}
-
 		if(v.hasNext == null || v.next == null) {
 			try
 				v = v.iterator()
@@ -990,20 +988,62 @@ class Interp {
 		return v;
 	}
 
-	function forLoop(n, it, e, ?ithv) {
-		var isKeyValue = ithv != null;
+	function makeKeyValueIterator(v:Dynamic):Iterator<Dynamic> {
+		#if ((flash && !flash9) || (php && !php7 && haxe_ver < '4.0.0'))
+		if (v.keyValueIterator != null)
+			v = v.keyValueIterator();
+
+		if (v.iterator != null)
+			v = v.iterator();
+
+		if (v.hasNext == null || v.next == null)
+			error(EInvalidIterator(v));
+		#else
+		try
+			v = v.keyValueIterator()
+		catch (e:Dynamic) {};
+
+		if (v.hasNext == null || v.next == null)
+			v = makeIterator(v);
+		#end
+		return v;
+	}
+
+	function forLoop(n, it, e) {
 		var old = declared.length;
-		if(isKeyValue)
-			declared.push({n: ithv, old: locals.get(ithv), depth: depth});
 		declared.push({n: n, old: locals.get(n), depth: depth});
-		var it = makeIterator(expr(it), isKeyValue);
+		var it = makeIterator(expr(it));
 		var _hasNext = it.hasNext;
 		var _next = it.next;
 		while (_hasNext()) {
 			var next = _next();
-			if(isKeyValue)
-				locals.set(ithv, {r: next.key, depth: depth});
-			locals.set(n, {r: isKeyValue ? next.value : next, depth: depth});
+			locals.set(n, {r: next, depth: depth});
+			try {
+				expr(e);
+			} catch (err:Stop) {
+				switch (err) {
+					case SContinue:
+					case SBreak:
+						break;
+					case SReturn:
+						throw err;
+				}
+			}
+		}
+		restore(old);
+	}
+
+	function forLoopKeyValue(n, it, e, ithv) {
+		var old = declared.length;
+		declared.push({n: ithv, old: locals.get(ithv), depth: depth});
+		declared.push({n: n, old: locals.get(n), depth: depth});
+		var it = makeKeyValueIterator(expr(it));
+		var _hasNext = it.hasNext;
+		var _next = it.next;
+		while (_hasNext()) {
+			var next = _next();
+			locals.set(ithv, {r: next.key, depth: depth});
+			locals.set(n, {r: next.value, depth: depth});
 			try {
 				expr(e);
 			} catch (err:Stop) {
@@ -1043,7 +1083,7 @@ class Interp {
 
 	public var useRedirects:Bool = true;
 
-	static function getClassType(o:Dynamic, ?cls:Class<Any>):String {
+	static function getClassType(o:Dynamic, ?cls:Class<Any>):Null<String> {
 		return switch (Type.typeof(o)) {
 			case TNull: "Null";
 			case TInt: "Int";
@@ -1093,6 +1133,7 @@ class Interp {
 			var obj = cast(o, IHScriptCustomBehaviour);
 			return obj.hset(f, v);
 		}
+		// Can use unsafe reflect here, since we checked for null above
 		if(isBypassAccessor) {
 			UnsafeReflect.setField(o, f, v);
 		} else {
@@ -1116,7 +1157,6 @@ class Interp {
 	}
 
 	function cnew(cl:String, args:Array<Dynamic>):Dynamic {
-		var cl:String = cast cl;
 		var c:Dynamic = resolve(cl);
 		if (c == null)
 			c = Type.resolveClass(cl);

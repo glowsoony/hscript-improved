@@ -40,6 +40,7 @@ class Tools {
 		case EWhile(c, e): f(c); f(e);
 		case EDoWhile(c, e): f(c); f(e);
 		case EFor(_, it, e): f(it); f(e);
+		case EForKeyValue(_, it, e, _): f(it); f(e);
 		case EBreak,EContinue:
 		case EFunction(_, e, _, _): f(e);
 		case EReturn(e): if( e != null ) f(e);
@@ -77,6 +78,7 @@ class Tools {
 		case EWhile(c, e): EWhile(f(c),f(e));
 		case EDoWhile(c, e): EDoWhile(f(c),f(e));
 		case EFor(v, it, e): EFor(v, f(it), f(e));
+		case EForKeyValue(v, it, e, ithv): EForKeyValue(v, f(it), f(e), ithv);
 		case EFunction(args, e, name, t): EFunction(args, f(e), name, t);
 		case EReturn(e): EReturn(if( e != null ) f(e) else null);
 		case EArray(e, i): EArray(f(e),f(i));
@@ -84,7 +86,7 @@ class Tools {
 		case ENew(cl,el): ENew(cl,[for( e in el ) f(e)]);
 		case EThrow(e): EThrow(f(e));
 		case ETry(e, v, t, c): ETry(f(e), v, t, f(c));
-		case EObject(fl): EObject([for( fi in fl ) { name : fi.name, e : f(fi.e) }]);
+		case EObject(fl): EObject([for( fi in fl ) new ObjectField(fi.name, f(fi.e))]);
 		case ETernary(c, e1, e2): ETernary(f(c), f(e1), f(e2));
 		case ESwitch(e, cases, def): ESwitch(f(e), [for( c in cases ) new SwitchCase([for( v in c.values ) f(v)], f(c.expr))], def == null ? null : f(def));
 		case EMeta(name, args, e): EMeta(name, args == null ? null : [for( a in args ) f(a)], f(e));

@@ -29,6 +29,8 @@ class ListCase extends TestCase {
 		assertEq("[for (k=>v in l4) k]", [for (k=>v in l4) k]);
 		assertEq("[for (k=>v in l4) v]", [for (k=>v in l4) v]);
 		assertEq("[for (k=>v in l4) k*v]", [for (k=>v in l4) k*v]);
+
+		assertEq("[for (v in l4) v]", [for (v in l4) v]);
 	}
 
 	override function teardown() {

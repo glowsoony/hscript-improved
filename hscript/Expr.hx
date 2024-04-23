@@ -62,7 +62,8 @@ enum Expr
 	ECall( e : Expr, params : Array<Expr> );
 	EIf( cond : Expr, e1 : Expr, ?e2 : Expr );
 	EWhile( cond : Expr, e : Expr );
-	EFor( v : String, it : Expr, e : Expr, ?ithv: String);
+	EFor( v : String, it : Expr, e : Expr);
+	EForKeyValue( v : String, it : Expr, e : Expr, ithv: String);
 	EBreak;
 	EContinue;
 	EFunction( args : Array<Argument>, e : Expr, ?name : String, ?ret : CType, ?isPublic : Bool, ?isStatic : Bool, ?isOverride : Bool );
@@ -72,7 +73,7 @@ enum Expr
 	ENew( cl : String, params : Array<Expr> );
 	EThrow( e : Expr );
 	ETry( e : Expr, v : String, t : Null<CType>, ecatch : Expr );
-	EObject( fl : Array<{ name : String, e : Expr }> );
+	EObject( fl : Array<ObjectField> );
 	ETernary( cond : Expr, e1 : Expr, e2 : Expr );
 	ESwitch( e : Expr, cases : Array<SwitchCase>, ?defaultExpr : Expr );
 	EDoWhile( cond : Expr, e : Expr);
@@ -81,6 +82,16 @@ enum Expr
 
 	EImport( c : String, ?asname:String );
 	EClass( name:String, fields:Array<Expr>, ?extend:String, interfaces:Array<String> );
+}
+
+class ObjectField {
+	public var name:String;
+	public var e:Expr;
+
+	public function new(name, e) {
+		this.name = name;
+		this.e = e;
+	}
 }
 
 class SwitchCase {

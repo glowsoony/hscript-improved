@@ -198,13 +198,23 @@ class Macro {
 				EWhile(convert(c), convert(e), false);
 			case EFor(v, it, efor):
 				#if (haxe_ver >= 4)
-					var p = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
+					var p:Expr = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
 					EFor({ expr : EBinop(OpIn,{ expr : EConst(CIdent(v)), pos : p },convert(it)), pos : p }, convert(efor));
 				#elseif (haxe_211 || haxe3)
-					var p = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
+					var p:Expr = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
 					EFor({ expr : EIn({ expr : EConst(CIdent(v)), pos : p },convert(it)), pos : p }, convert(efor));
 				#else
 					EFor(v, convert(it), convert(efor));
+				#end
+			case EForKeyValue(v, it, efor, ithv):
+				#if (haxe_ver >= 4)
+					var p:Expr = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
+					EFor({ expr : EBinop(OpIn,{ expr : EConst(CIdent(v)), pos : p },convert(it)), pos : p }, convert(efor), ithv);
+				#elseif (haxe_211 || haxe3)
+					var p:Expr = #if hscriptPos { file : p.file, min : e.pmin, max : e.pmax } #else p #end;
+					EFor({ expr : EIn({ expr : EConst(CIdent(v)), pos : p },convert(it)), pos : p }, convert(efor), ithv);
+				#else
+					EFor(v, convert(it), convert(efor), ithv);
 				#end
 			case EBreak:
 				EBreak;

@@ -217,11 +217,13 @@ class Printer {
 			add(" while ( ");
 			expr(cond);
 			add(" )");
-		case EFor(v, it, e, ithv):
-			if(ithv != null)
-				add("for( "+ithv+" => "+v+" in ");
-			else
-				add("for( "+v+" in ");
+		case EFor(v, it, e):
+			add("for( "+v+" in ");
+			expr(it);
+			add(" ) ");
+			expr(e);
+		case EForKeyValue(v, it, e, ithv):
+			add("for( "+ithv+" => "+v+" in ");
 			expr(it);
 			add(" ) ");
 			expr(e);

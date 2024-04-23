@@ -288,6 +288,7 @@ class Parser {
 			case EWhile(_,e): isBlock(e);
 			case EDoWhile(_,e): isBlock(e);
 			case EFor(_,_,e): isBlock(e);
+			case EForKeyValue(_,_,e,_): isBlock(e);
 			case EReturn(e): e != null && isBlock(e);
 			case ETry(_, _, _, e): isBlock(e);
 			case EMeta(_, _, e): isBlock(e);
@@ -337,7 +338,7 @@ class Parser {
 					break;
 			}
 			ensure(TDoubleDot);
-			fl.push({ name : id, e : parseExpr() });
+			fl.push(new ObjectField(id, parseExpr()));
 			tk = token();
 			switch( tk ) {
 				case TBrClose:
@@ -481,7 +482,7 @@ class Parser {
 			}
 			if( a.length == 1 && a[0] != null ) // What is this for???
 				switch( expr(a[0]) ) {
-					case EFor(_), EWhile(_), EDoWhile(_):
+					case EFor(_), EForKeyValue(_), EWhile(_), EDoWhile(_):
 						var tmp = "__a_" + (uid++);
 						var e = mk(EBlock([
 							mk(EVar(tmp, null, mk(EArrayDecl([]), p1)), p1),
@@ -547,20 +548,22 @@ class Parser {
 	function mapCompr( tmp : String, e : Expr ) {
 		if( e == null ) return null;
 		var edef = switch( expr(e) ) {
-		case EFor(v, it, e2, ithv):
-			EFor(v, it, mapCompr(tmp, e2), ithv);
-		case EWhile(cond, e2):
-			EWhile(cond, mapCompr(tmp, e2));
-		case EDoWhile(cond, e2):
-			EDoWhile(cond, mapCompr(tmp, e2));
-		case EIf(cond, e1, e2) if( e2 == null ):
-			EIf(cond, mapCompr(tmp, e1), null);
-		case EBlock([e]):
-			EBlock([mapCompr(tmp, e)]);
-		case EParent(e2):
-			EParent(mapCompr(tmp, e2));
-		default:
-			ECall( mk(EField(mk(EIdent(tmp), pmin(e), pmax(e)), "push"), pmin(e), pmax(e)), [e]);
+			case EFor(v, it, e2):
+				EFor(v, it, mapCompr(tmp, e2));
+			case EForKeyValue(v, it, e2, ithv):
+				EForKeyValue(v, it, mapCompr(tmp, e2), ithv);
+			case EWhile(cond, e2):
+				EWhile(cond, mapCompr(tmp, e2));
+			case EDoWhile(cond, e2):
+				EDoWhile(cond, mapCompr(tmp, e2));
+			case EIf(cond, e1, e2) if( e2 == null ):
+				EIf(cond, mapCompr(tmp, e1), null);
+			case EBlock([e]):
+				EBlock([mapCompr(tmp, e)]);
+			case EParent(e2):
+				EParent(mapCompr(tmp, e2));
+			default:
+				ECall( mk(EField(mk(EIdent(tmp), pmin(e), pmax(e)), "push"), pmin(e), pmax(e)), [e]);
 		}
 		return mk(edef, pmin(e), pmax(e));
 	}
@@ -759,7 +762,10 @@ class Parser {
 			var eiter = parseExpr();
 			ensure(TPClose);
 			var e = parseExpr();
-			mk(EFor(vname,eiter,e,ithv),p1,pmax(e));
+			if(ithv != null)
+				mk(EForKeyValue(vname,eiter,e,ithv),p1,pmax(e));
+			else
+				mk(EFor(vname,eiter,e),p1,pmax(e));
 		case "break": mk(EBreak);
 		case "continue": mk(EContinue);
 		case "else": unexpected(TId(id));
