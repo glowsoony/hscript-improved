@@ -3,16 +3,17 @@ import hscript.Expr.Error;
 using StringTools;
 
 class Util {
-	public static function assert(value:Bool, message:String) {
+	public static function assert(value:Bool, message:String, ?pos:haxe.PosInfos) {
 		if (value) {
 			passedTestUnits++;
 		} else {
 			Sys.println("Assertion failed: " + message);
+			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
 		}
 	}
 
-	public static function assertEq(value:Dynamic, expected:Dynamic, message:String) {
+	public static function assertEq(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
 		var passed = value == expected;
 		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
 			if (deepCompareArrays(value, expected))
@@ -27,11 +28,12 @@ class Util {
 			passedTestUnits++;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
+			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
 		}
 	}
 
-	public static function assertNeq(value:Dynamic, expected:Dynamic, message:String) {
+	public static function assertNeq(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
 		var passed = value != expected;
 		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
 			if (!deepCompareArrays(value, expected))
@@ -44,6 +46,7 @@ class Util {
 			passedTestUnits++;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
+			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
 		}
 	}
@@ -154,7 +157,7 @@ class Util {
 		var err = error.toString();
 		if (err.startsWith(fn)) err = err.substr(fn.length);
 
-		Sys.println(fn + err);
+		Sys.println("ERROR: " + fn + err);
 		//Logs.traceColored([
 		//	Logs.logText(fn, GREEN),
 		//	Logs.logText(err, RED)

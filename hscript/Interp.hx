@@ -631,8 +631,10 @@ class Interp {
 				return get(field, f);
 			case EBinop(op, e1, e2):
 				var fop = binops.get(op);
+				#if debug
 				if (fop == null)
 					error(EInvalidOp(op));
+				#end
 				return fop(e1, e2);
 			case EUnop(op, prefix, e):
 				switch (op) {

@@ -31,18 +31,26 @@ enum Const {
 }
 
 #if hscriptPos
-typedef Expr = {
-	var e : ExprDef;
-	var pmin : Int;
-	var pmax : Int;
-	var origin : String;
-	var line : Int;
+class Expr {
+	public var e : ExprDef;
+	public var pmin : Int;
+	public var pmax : Int;
+	public var origin : String;
+	public var line : Int;
+	public function new(e, pmin, pmax, origin, line) {
+		this.e = e;
+		this.pmin = pmin;
+		this.pmax = pmax;
+		this.origin = origin;
+		this.line = line;
+	}
 }
-enum ExprDef {
+enum ExprDef
 #else
 typedef ExprDef = Expr;
-enum Expr {
+enum Expr
 #end
+{
 	EConst( c : Const );
 	EIdent( v : String );
 	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool );
@@ -75,7 +83,19 @@ enum Expr {
 	EClass( name:String, fields:Array<Expr>, ?extend:String, interfaces:Array<String> );
 }
 
-typedef Argument = { name : String, ?t : CType, ?opt : Bool, ?value : Expr };
+//typedef Argument = { name : String, ?t : CType, ?opt : Bool, ?value : Expr };
+class Argument {
+	public var name : String;
+	public var t : Null<CType>;
+	public var opt : Bool;
+	public var value : Null<Expr>;
+	public function new(name, ?t, ?opt, ?value) {
+		this.name = name;
+		this.t = t;
+		this.opt = opt;
+		this.value = value;
+	}
+}
 
 typedef Metadata = Array<{ name : String, params : Array<Expr> }>;
 
@@ -106,10 +126,11 @@ class Error {
 		return Printer.errorToString(this);
 	}
 }
-enum ErrorDef {
+enum ErrorDef
 #else
-enum Error {
+enum Error
 #end
+{
 	EInvalidChar( c : Int );
 	EUnexpected( s : String );
 	EUnterminatedString;

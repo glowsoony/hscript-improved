@@ -33,4 +33,17 @@ class HScriptRunner {
 		else
 			return interp.exprReturn(expr);
 	}
+
+	public function executeWithVars(script:String, vars:Dynamic):Dynamic {
+		var interp = clearPrevious ? getNewInterp() : this.interp;
+		var expr = Util.parse(headerCode + script + tailCode);
+		if(expr == null)
+			return "ERROR";
+		for(v in Reflect.fields(vars))
+			interp.variables.set(v, Reflect.field(vars, v));
+		if (clearPrevious)
+			return interp.execute(expr);
+		else
+			return interp.exprReturn(expr);
+	}
 }

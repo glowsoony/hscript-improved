@@ -269,7 +269,7 @@ class Parser {
 		if( e == null ) return null;
 		if( pmin == null ) pmin = tokenMin;
 		if( pmax == null ) pmax = tokenMax;
-		return { e : e, pmin : pmin, pmax : pmax, origin : origin, line : line };
+		return new Expr(e, pmin, pmax, origin, line);
 		#else
 		return e;
 		#end
@@ -389,14 +389,14 @@ class Parser {
 							return parseExprNext(mk(ECheckType(e,t),p1,tokenMax));
 						case TComma:
 							switch( expr(e) ) {
-								case EIdent(v): return parseLambda([{ name : v, t : t }], pmin(e));
+								case EIdent(v): return parseLambda([new Argument(v, t)], pmin(e));
 								default:
 							}
 						default:
 					}
 				case TComma:
 					switch( expr(e) ) {
-						case EIdent(v): return parseLambda([{name:v}], pmin(e));
+						case EIdent(v): return parseLambda([new Argument(v)], pmin(e));
 						default:
 					}
 				default:
@@ -504,7 +504,7 @@ class Parser {
 		while( true ) {
 			var id = getIdent();
 			var t = maybe(TDoubleDot) ? parseType() : null;
-			args.push({ name : id, t : t });
+			args.push(new Argument(id, t));
 			var tk = token();
 			switch( tk ) {
 			case TComma:
@@ -569,28 +569,30 @@ class Parser {
 		if( e == null && resumeErrors )
 			return null;
 		return switch( expr(e) ) {
-		case EBinop(bop, e1, e2): mk(EBinop(bop, makeUnop(op, e1), e2), pmin(e1), pmax(e2));
-		case ETernary(e1, e2, e3): mk(ETernary(makeUnop(op, e1), e2, e3), pmin(e1), pmax(e3));
-		default: mk(EUnop(op,true,e),pmin(e),pmax(e));
+			case EBinop(bop, e1, e2): mk(EBinop(bop, makeUnop(op, e1), e2), pmin(e1), pmax(e2));
+			case ETernary(e1, e2, e3): mk(ETernary(makeUnop(op, e1), e2, e3), pmin(e1), pmax(e3));
+			default: mk(EUnop(op,true,e),pmin(e),pmax(e));
 		}
 	}
 
 	function makeBinop( op, e1, e ) {
+		if(!Tools.isValidBinOp(op))
+			error(EInvalidOp(op),pmin(e1),pmax(e1));
 		if( e == null && resumeErrors )
 			return mk(EBinop(op,e1,e),pmin(e1),pmax(e1));
 		return switch( expr(e) ) {
-		case EBinop(op2,e2,e3):
-			if( opPriority.get(op) <= opPriority.get(op2) && !opRightAssoc.exists(op) )
-				mk(EBinop(op2,makeBinop(op,e1,e2),e3),pmin(e1),pmax(e3));
-			else
-				mk(EBinop(op, e1, e), pmin(e1), pmax(e));
-		case ETernary(e2,e3,e4):
-			if( opRightAssoc.exists(op) )
+			case EBinop(op2,e2,e3):
+				if( opPriority.get(op) <= opPriority.get(op2) && !opRightAssoc.exists(op) )
+					mk(EBinop(op2,makeBinop(op,e1,e2),e3),pmin(e1),pmax(e3));
+				else
+					mk(EBinop(op, e1, e), pmin(e1), pmax(e));
+			case ETernary(e2,e3,e4):
+				if( opRightAssoc.exists(op) )
+					mk(EBinop(op,e1,e),pmin(e1),pmax(e));
+				else
+					mk(ETernary(makeBinop(op, e1, e2), e3, e4), pmin(e1), pmax(e));
+			default:
 				mk(EBinop(op,e1,e),pmin(e1),pmax(e));
-			else
-				mk(ETernary(makeBinop(op, e1, e2), e3, e4), pmin(e1), pmax(e));
-		default:
-			mk(EBinop(op,e1,e),pmin(e1),pmax(e));
 		}
 	}
 
@@ -1045,10 +1047,10 @@ class Parser {
 					switch( expr(e1) ) {
 						case EIdent(i), EParent(expr(_) => EIdent(i)):
 							var eret = parseExpr();
-							return mk(EFunction([{ name : i }], mk(EReturn(eret),pmin(eret))), pmin(e1));
+							return mk(EFunction([new Argument(i)], mk(EReturn(eret),pmin(eret))), pmin(e1));
 						case ECheckType(expr(_) => EIdent(i), t):
 							var eret = parseExpr();
-							return mk(EFunction([{ name : i, t : t }], mk(EReturn(eret),pmin(eret))), pmin(e1));
+							return mk(EFunction([new Argument(i, t)], mk(EReturn(eret),pmin(eret))), pmin(e1));
 						default:
 					}
 					unexpected(tk);
@@ -1106,7 +1108,7 @@ class Parser {
 						unexpected(tk);
 						break;
 				}
-				var arg : Argument = { name : name };
+				var arg : Argument = new Argument(name);
 				args.push(arg);
 				if( opt ) arg.opt = true;
 				if( allowTypes ) {

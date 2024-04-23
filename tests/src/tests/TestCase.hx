@@ -3,15 +3,23 @@ package tests;
 @:access(hscript.Interp)
 @:access(hscript.Parser)
 class TestCase extends HScriptRunner {
-	public function assertEq(script:String, expected:Dynamic, ?message:String) {
+	public function assertEq(script:String, expected:Dynamic, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
 		if(message == null)
 			message = script;
-		Util.assertEq(execute(headerCode + script + tailCode), expected, message);
+		var result = if(vars != null)
+			executeWithVars(headerCode + script + tailCode, vars);
+		else
+			execute(headerCode + script + tailCode);
+		Util.assertEq(result, expected, message, pos);
 	}
 
-	public function assertNeq(script:String, expected:Dynamic, ?message:String) {
+	public function assertNeq(script:String, expected:Dynamic, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
 		if(message == null)
 			message = script;
-		Util.assertNeq(execute(headerCode + script + tailCode), expected, message);
+		var result = if(vars != null)
+			executeWithVars(headerCode + script + tailCode, vars);
+		else
+			execute(headerCode + script + tailCode);
+		Util.assertNeq(result, expected, message, pos);
 	}
 }

@@ -103,12 +103,21 @@ class Tools {
 		#end
 	}
 
-	public static inline function mk( e : ExprDef, p : Expr ) {
+	public static inline function mk( e : ExprDef, p : Expr ):Expr {
 		#if hscriptPos
-		return { e : e, pmin : p.pmin, pmax : p.pmax, origin : p.origin, line : p.line };
+		return new Expr(e, p.pmin, p.pmax, p.origin, p.line);
 		#else
 		return e;
 		#end
+	}
+
+	public static function isValidBinOp(op:String):Bool {
+		if(op == ("??"+"=")) return true;
+		return switch(op) {
+			case "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | ">>>" | "==" | "!=" | ">=" | "<=" | ">" | "<" | "||" | "&&" | "is" | "=" | "??" | "..." | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | ">>>=": true;
+			case "=>": true;
+			default: false;
+		}
 	}
 
 }

@@ -15,10 +15,10 @@ class TestBenchmark extends Benchmark {
 
     public var a:Array<Float> = [];
 	public override function haxeBenchmark() {
-		for (i in 0...1000) a.push(i);
+		for (i in 0...1000) a.push(i * 2 + 1 / 6);
 	}
 
 	public override function hscriptBenchmark() {
-		execute("var a:Array<Float> = []; for (i in 0...1000) a.push(i);");
+		execute("var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6);");
 	}
 }
