@@ -259,18 +259,19 @@ function f3() {
 	return 3;
 }
 
-		if(Main.SHOW_KNOWN_BUGS) {
+		Util.runKnownBug("Function arguments get called first, before function is evaluated", () ->{
 			var end = begin();
 			d.f1()(f3());
 			d.f1(f2());
 			assertEq('var end = begin();
+			// Expected internal behavior for  `d.f1()(f3());`
 			//var func = d.f1();
 			//func(f3());
 
 			d.f1()(f3());
 			d.f1(f2());
 			end()', end());
-		}
+		});
 	}
 
 	override function teardown() {

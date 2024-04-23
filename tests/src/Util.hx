@@ -48,6 +48,16 @@ class Util {
 	static var totalTestUnits:Int = 0;
 	static var passedTestUnits:Int = 0;
 	static var failedTestUnits:Int = 0;
+	static var skippedKnownBugs:Int = 0;
+
+	public static function runKnownBug(name:String, func:Void->Void) {
+		if (Main.SHOW_KNOWN_BUGS) {
+			Sys.println("Running known bug: " + name);
+			func();
+		} else {
+			skippedKnownBugs++;
+		}
+	}
 
 	public static function startUnitTest(path:String) {
 		//Sys.println("Running unit tests " + path);
@@ -65,6 +75,8 @@ class Util {
 		Sys.println("Total Units: " + totalTestUnits);
 		Sys.println("Total tests passed: " + passedTestUnits);
 		Sys.println("Total tests failed: " + failedTestUnits);
+		if(skippedKnownBugs > 0)
+			Sys.println("Skipped known bugs: " + skippedKnownBugs);
 		//Sys.println("Finished unit tests " + currentTestPath.pop());
 	}
 
