@@ -185,7 +185,6 @@ class Parser {
 
 	public function parseString( s : String, ?origin : String = "hscript" ) {
 		initParser(origin);
-		if(s == "") s = "0;"; // fixing crash with empty file
 		input = s;
 		readPos = 0;
 		var a = new Array();
