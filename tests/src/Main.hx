@@ -19,11 +19,23 @@ class Main {
 		}
 		runTest("Array", new ArrayCase());
 		runTest("BinOp", new BinOpCase());
+		runTest("Enum", new EnumCase());
 		runTest("EvalOrder", new EvalOrderCase());
-		runTest("Math", new MathCase());
 		runTest("Float", new FloatCase());
 		runTest("IntIterator", new IntIteratorCase());
+		runTest("Lambda", new LambdaCase());
+		runTest("List", new ListCase());
+		runTest("Math", new MathCase());
+		runTest("Map", new MapCase());
 		runTest("Misc", new MiscCase());
+		runTest("Reflect", new ReflectCase());
+		runTest("Regex", new RegexCase());
+		runTest("Std", new StdCase());
+		runTest("String", new StringCase());
+		runTest("StringBuf", new StringBufCase());
+		runTest("StringTools", new StringToolsCase());
+		// TODO: UnicodeCase.hx?
+		// TODO: UnicodeStringCase.hx?
 		Util.printTestResults();
 		#end
 	}

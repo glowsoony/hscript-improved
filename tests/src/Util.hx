@@ -18,6 +18,10 @@ class Util {
 			if (deepCompareArrays(value, expected))
 				passed = true;
 		}
+		else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
+			if(Type.enumEq(value, expected))
+				passed = true;
+		}
 
 		if (passed) {
 			passedTestUnits++;
@@ -60,7 +64,7 @@ class Util {
 	}
 
 	public static function startUnitTest(path:String) {
-		//Sys.println("Running unit tests " + path);
+		Sys.println("Running unit tests in " + path);
 		currentTestPath.push(path);
 		totalTestUnits++;
 	}
@@ -71,13 +75,14 @@ class Util {
 	}
 
 	public static function printTestResults() {
-		Sys.println("-----------------------------------------------------------");
+		Sys.println("-----------------------------RESULTS-----------------------------");
 		Sys.println("Total Units: " + totalTestUnits);
 		Sys.println("Total tests passed: " + passedTestUnits);
 		Sys.println("Total tests failed: " + failedTestUnits);
 		if(skippedKnownBugs > 0)
 			Sys.println("Skipped known bugs: " + skippedKnownBugs);
 		//Sys.println("Finished unit tests " + currentTestPath.pop());
+		Sys.println("-----------------------------RESULTS-----------------------------");
 	}
 
 	public static function parse(str:String) {
@@ -85,7 +90,14 @@ class Util {
 		p.allowTypes = true;
 		p.allowMetadata = true;
 		p.allowJSON = true;
-		return p.parseString(str);
+		var result = null;
+		try {
+			result = p.parseString(str);
+		} catch (e:Dynamic) {
+			Sys.println("## Error parsing: " + str);
+			Sys.println("## Error: " + e);
+		}
+		return result;
 	}
 
 	public static function getInterp() {
@@ -95,6 +107,7 @@ class Util {
 		//interp.allowPublicVariables = true;
 		interp.variables.set("Math", Math);
 		interp.variables.set("Std", Std);
+		interp.variables.set("Type", Type);
 		interp.variables.set("StringTools", StringTools);
 		return interp;
 	}

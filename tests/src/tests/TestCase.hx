@@ -34,9 +34,11 @@ class TestCase {
 		Util.assertNeq(execute(headerCode + script + tailCode), expected, message);
 	}
 
-	public function execute(script:String) {
+	public function execute(script:String):Dynamic {
 		var interp = clearPrevious ? getNewInterp() : this.interp;
 		var expr = Util.parse(headerCode + script + tailCode);
+		if(expr == null)
+			return "ERROR";
 		if (clearPrevious)
 			return interp.execute(expr);
 		else
