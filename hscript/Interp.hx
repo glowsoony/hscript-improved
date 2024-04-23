@@ -50,6 +50,19 @@ enum abstract ScriptObjectType(Int) {
 	var SNull;
 }
 
+@:structInit
+class DeclaredVar {
+	public var r:Dynamic;
+	public var depth:Int;
+}
+
+@:structInit
+class RedeclaredVar {
+	public var n:String;
+	public var old:DeclaredVar;
+	public var depth:Int;
+}
+
 class Interp {
 	public var scriptObject(default, set):Dynamic;
 	private var _hasScriptObject(default, null):Bool = false;
@@ -78,13 +91,13 @@ class Interp {
 	}
 	public var errorHandler:Error->Void;
 	public var importFailedCallback:Array<String>->Bool;
-	#if haxe3
+	#if haxe3 // Also Applies to 4.0.0 and above
 	public var customClasses:Map<String, Dynamic>;
 	public var variables:Map<String, Dynamic>;
 	public var publicVariables:Map<String, Dynamic>;
 	public var staticVariables:Map<String, Dynamic>;
 
-	public var locals:Map<String, {r:Dynamic, depth:Int}>;
+	public var locals:Map<String, DeclaredVar>;
 	var binops:Map<String, Expr->Expr->Dynamic>;
 	#else
 	public var customClasses:Hash<Dynamic>;
@@ -92,13 +105,13 @@ class Interp {
 	public var publicVariables:Hash<Dynamic>;
 	public var staticVariables:Hash<Dynamic>;
 
-	public var locals:Hash<{r:Dynamic, depth:Int}>;
+	public var locals:Hash<DeclaredVar>;
 	var binops:Hash<Expr->Expr->Dynamic>;
 	#end
 
 	var depth:Int = 0;
 	var inTry:Bool;
-	var declared:Array<{n:String, old:{r:Dynamic, depth:Int}, depth:Int}>;
+	var declared:Array<RedeclaredVar>;
 	var returnValue:Dynamic;
 
 	var isBypassAccessor:Bool = false;
@@ -691,7 +704,7 @@ class Interp {
 				throw SReturn;
 			case EFunction(params, fexpr, name, _, isPublic, isStatic, isOverride):
 				var __capturedLocals = duplicate(locals);
-				var capturedLocals:Map<String, {r:Dynamic, depth:Int}> = [];
+				var capturedLocals:Map<String, DeclaredVar> = [];
 				for(k=>e in __capturedLocals)
 					if (e != null && e.depth > 0)
 						capturedLocals.set(k, e);
@@ -762,20 +775,18 @@ class Interp {
 					} else {
 						// function-in-function is a local function
 						declared.push({n: name, old: locals.get(name), depth: depth});
-						var ref = {r: f, depth: depth};
+						var ref:DeclaredVar = {r: f, depth: depth};
 						locals.set(name, ref);
 						capturedLocals.set(name, ref); // allow self-recursion
 					}
 				}
 				return f;
 			case EArrayDecl(arr, wantedType):
-				var isMap = false;
-				var isTypeMap = false;
-				if(!isMap && wantedType != null) {
-					isMap = wantedType.match(CTPath(["Map"], [_, _]));
-					isTypeMap = true;
+				var isTypeMap = wantedType != null;
+				var isMap = if(isTypeMap) {
+					wantedType.match(CTPath(["Map"], [_, _]));
 				} else {
-					isMap = arr.length > 0 && Tools.expr(arr[0]).match(EBinop("=>", _));
+					arr.length > 0 && Tools.expr(arr[0]).match(EBinop("=>", _));
 				}
 				if (isMap) {
 					var isAllString:Bool = true;
@@ -789,10 +800,14 @@ class Interp {
 							case EBinop("=>", eKey, eValue): {
 								var key:Dynamic = expr(eKey);
 								var value:Dynamic = expr(eValue);
-								isAllString = isAllString && (key is String);
-								isAllInt = isAllInt && (key is Int);
-								isAllObject = isAllObject && Reflect.isObject(key);
-								isAllEnum = isAllEnum && Reflect.isEnumValue(key);
+								if(isAllString)
+									isAllString = (key is String);
+								if(isAllInt)
+									isAllInt = (key is Int);
+								if(isAllObject)
+									isAllObject = Reflect.isObject(key);
+								if(isAllEnum)
+									isAllEnum = Reflect.isEnumValue(key);
 								keys.push(key);
 								values.push(value);
 							}
@@ -801,21 +816,19 @@ class Interp {
 					}
 
 					if(isTypeMap) {
-						if(wantedType != null) {
-							isAllString = wantedType.match(CTPath(["Map"], [CTPath(["String"], _), _]));
-							isAllInt = wantedType.match(CTPath(["Map"], [CTPath(["Int"], _), _]));
-							if(isAllString || isAllInt) {
-								isAllObject = false;
-								isAllEnum = false;
-							} else {
-								if(!isAllObject && !isAllEnum) {
-									throw("Unknown Type Key");
-								}
+						isAllString = wantedType.match(CTPath(["Map"], [CTPath(["String"], _), _]));
+						isAllInt = wantedType.match(CTPath(["Map"], [CTPath(["Int"], _), _]));
+						if(isAllString || isAllInt) {
+							isAllObject = false;
+							isAllEnum = false;
+						} else {
+							if(!isAllObject && !isAllEnum) {
+								throw("Unknown Type Key");
 							}
 						}
 					}
 
-					var map:Dynamic = {
+					var map:IMap<Dynamic, Dynamic> = {
 						if (isAllInt)
 							new haxe.ds.IntMap<Dynamic>();
 						else if (isAllString)
@@ -828,15 +841,17 @@ class Interp {
 							throw 'Inconsistent key types';
 					}
 					for (n in 0...keys.length) {
-						setMapValue(map, keys[n], values[n]);
+						map.set(keys[n], values[n]);
+						//setMapValue(map, keys[n], values[n]);
 					}
 					return map;
 				} else {
-					var a = new Array();
-					for (e in arr) {
-						a.push(expr(e));
-					}
-					return a;
+					//var a = new Array();
+					//for (e in arr) {
+					//	a.push(expr(e));
+					//}
+					//return a;
+					return [for (e in arr) expr(e)];
 				}
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
@@ -1005,11 +1020,11 @@ class Interp {
 	}
 
 	inline function getMapValue(map:Dynamic, key:Dynamic):Dynamic {
-		return cast(map, haxe.Constraints.IMap<Dynamic, Dynamic>).get(key);
+		return cast(map, IMap<Dynamic, Dynamic>).get(key);
 	}
 
 	inline function setMapValue(map:Dynamic, key:Dynamic, value:Dynamic):Void {
-		cast(map, haxe.Constraints.IMap<Dynamic, Dynamic>).set(key, value);
+		cast(map, IMap<Dynamic, Dynamic>).set(key, value);
 	}
 
 	public static var getRedirects:Map<String, Dynamic->String->Dynamic> = [];
