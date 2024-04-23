@@ -13,6 +13,13 @@ class Optimizer {
 		var e = Tools.expr(s);
 
 		// TODO: Convert EBinOp(+, a, EUnop(-, b)) to EBinOp(-, a, b) aka (a - b)
+		// TODO: Make it so if EFor & EForKeyValue iterator variable isnt used its replaced with a $, which the code handles as doesnt exist
+		// TODO: Make it so <PURE_VAR|CONST> == ?; gets removed, IF it isnt stored
+		// TODO: Optimize ?. and ??
+		// TODO: Optimize Std.string(CONSTANT) to "CONSTANT"
+		// TODO: Remove Std.string if its the right side of a binop of a string
+		// TODO: Add EForComprehension, EWhileComprehension, EDoWhileComprehension for better optimization
+		// TODO: Optimize EFor(v, it, EBlock([e1])) to EFor(v, it, e1)
 
 		switch(e) {
 			// Parse all expressions and recreate the AST
@@ -26,15 +33,7 @@ class Optimizer {
 				for(e in exprs) {
 					switch(Tools.expr(e)) {
 						case EBlock(iex):
-							var declares = false;
-							for(ie in iex) {
-								declares = switch(Tools.expr(ie)) {
-									case EVar(_): true;// has a declaration
-									case EFunction(_): true;// has a declaration
-									default: declares;
-								}
-								if(declares) break;
-							}
+							var declares = Lambda.exists(iex, ie -> hasDecl(ie));
 							if(!declares) {
 								for(ex in iex)
 									newExprs.push(ex);
@@ -82,6 +81,27 @@ class Optimizer {
 						if(e2 == null)
 							return mk(EBlock([]), s);
 						return mk(EParent(e2), s);
+					}
+				}
+				if(isConstant(e1) && isConstant(e2)) {
+					var c1 = getConstant(e1);
+					var c2 = getConstant(e2);
+
+					if(c1 == false && c2 == true) { // (VAR ? false : true)
+						return optimize(mk(EUnop("!", true, econd), s));
+					}
+					if(c1 == true && c2 == false) { // (VAR ? true : false)
+						return optimize(mk(Tools.expr(econd), s));
+					}
+					if(isConstant(econd)) {
+						if(c1 == true && c2 == true) { // (CONST ? true : true)
+							return mk(convertConstant(true), s);
+						}
+						if(c1 == false && c2 == false) { // (CONST ? false : false)
+							return mk(convertConstant(false), s);
+						}
+						// TODO: Check if local variables are used in the condition
+						// Since they cant have side effects, they can be optimized
 					}
 				}
 				return mk(ETernary(econd, e1, e2), s);
@@ -260,12 +280,30 @@ class Optimizer {
 					}
 				}
 
+				if(isNumber(e1) && !isConstant(e2)) {
+					var c1 = getNumber(e1);
+					if(c1 == 0 && op == "+")
+						return mk(Tools.expr(e2), s);
+					//if(c1 == 0 && op == "*")
+					//	return mk(convertConstant(0), s);
+				}
+
+				if(!isConstant(e1) && isNumber(e2)) {
+					var c2 = getNumber(e2);
+					if(op == "+" && c2 == 0)
+						return mk(Tools.expr(e1), s);
+					if(op == "/" && c2 == 1)
+						return mk(Tools.expr(e1), s);
+					//if(op == "*" && c2 == 0)
+					//	return mk(convertConstant(0), s);
+				}
+
 				return mk(EBinop(op, e1, e2), s);
 
 			case EUnop(op, prefix, e):
 				e = optimize(e);
 
-				if(isConstant(e)) {
+				if(isConstant(e) && prefix) {
 					var constant:Dynamic = getConstant(e);
 					switch(op) {
 						case "-": return mk(convertConstant(-constant), s);
@@ -283,12 +321,38 @@ class Optimizer {
 		return s;
 	}
 
+	static function hasDecl(e:Expr):Bool {
+		return switch(Tools.expr(e)) {
+			case EVar(_): true;// has a declaration
+			case EFunction(_): true;// has a declaration
+			default: false;
+		}
+	}
+
 	static function isConstant(e:Expr):Bool {
 		return switch(Tools.expr(e)) {
 			case EIdent("true") | EIdent("false") | EIdent("null"): true;
 			case EConst(_): true;
 			case EParent(e): isConstant(e);
 			default: false;
+		}
+	}
+
+	static function isNumber(e:Expr):Bool {
+		return switch(Tools.expr(e)) {
+			case EConst(CInt(_)): true;
+			case EConst(CFloat(_)): true;
+			case EParent(e): isNumber(e);
+			default: false;
+		}
+	}
+
+	static function getNumber(e:Expr):Dynamic {
+		return switch(Tools.expr(e)) {
+			case EConst(CInt(value)): value;
+			case EConst(CFloat(value)): value;
+			case EParent(e): getNumber(e);
+			default: throw "Unknown type " + Tools.expr(e);
 		}
 	}
 

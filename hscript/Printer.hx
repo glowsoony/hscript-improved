@@ -37,6 +37,11 @@ class Printer {
 		return buf.toString();
 	}
 
+	public static function convertExprToString( e : Expr ) {
+		var printer = new Printer();
+		return printer.exprToString(e);
+	}
+
 	public function typeToString( t : CType ) {
 		buf = new StringBuf();
 		tabs = "";
@@ -108,11 +113,53 @@ class Printer {
 		}
 	}
 
+	function block(e : Expr, addSpaceIfBlock : Bool = true) {
+		var isBlock = Tools.expr(e).match(EBlock(_));
+		if(isBlock) {
+			if(addSpaceIfBlock) add(" ");
+		} else {
+			add("\n");
+			tabs += "\t";
+			add(tabs);
+		}
+		expr(e);
+
+		if(!isBlock) {
+			//add("\n");
+			tabs = tabs.substr(1);
+			//add(tabs);
+		}
+
+		return isBlock;
+	}
+
+	function isJson(s:String) {
+		var len = s.length;
+		var i = 0;
+		while (i < len) {
+			switch (StringTools.fastCodeAt(s, i++)) {
+				// [a-zA-Z0-9_]+
+				case "a".code | "b".code | "c".code | "d".code | "e".code | "f".code | "g".code | "h".code | "i".code | "j".code | "k".code | "l".code | "m".code
+					| "n".code | "o".code | "p".code | "q".code | "r".code | "s".code | "t".code | "u".code | "v".code | "w".code | "x".code | "y".code | "z".code
+					| "A".code | "B".code | "C".code | "D".code | "E".code | "F".code | "G".code | "H".code | "I".code | "J".code | "K".code | "L".code | "M".code
+					| "N".code | "O".code | "P".code | "Q".code | "R".code | "S".code | "T".code | "U".code | "V".code | "W".code | "X".code | "Y".code | "Z".code
+					| "0".code | "1".code | "2".code | "3".code | "4".code | "5".code | "6".code | "7".code | "8".code | "9".code | "_".code:
+				case _:
+					return true;
+			}
+
+		}
+		return false;
+	}
+
 	function expr( e : Expr ) {
 		if( e == null ) {
 			add("??NULL??");
 			return;
 		}
+
+		// TODO: make else if print correctly
+
 		switch( Tools.expr(e) ) {
 		case EImport(c, n):
 			add("import " + c);
@@ -229,33 +276,35 @@ class Printer {
 		case EIf(cond,e1,e2):
 			add("if( ");
 			expr(cond);
-			add(" ) ");
-			expr(e1);
+			add(" )");
+			var wasBlock = block(e1, true);
+
 			if( e2 != null ) {
+				if(!wasBlock) add("\n" + tabs);
 				add(" else ");
-				expr(e2);
+				block(e2);
 			}
 		case EWhile(cond,e):
 			add("while( ");
 			expr(cond);
-			add(" ) ");
-			expr(e);
+			add(" )");
+			block(e, true);
 		case EDoWhile(cond,e):
-			add("do ");
-			expr(e);
+			add("do");
+			block(e, true);
 			add(" while ( ");
 			expr(cond);
 			add(" )");
 		case EFor(v, it, e):
 			add("for( "+v+" in ");
 			expr(it);
-			add(" ) ");
-			expr(e);
+			add(" )");
+			block(e, true);
 		case EForKeyValue(v, it, e, ithv):
 			add("for( "+ithv+" => "+v+" in ");
 			expr(it);
-			add(" ) ");
-			expr(e);
+			add(" )");
+			block(e, true);
 		case EBreak:
 			add("break");
 		case EContinue:
@@ -307,12 +356,12 @@ class Printer {
 			add("throw ");
 			expr(e);
 		case ETry(e, v, t, ecatch):
-			add("try ");
-			expr(e);
+			add("try");
+			block(e);
 			add(" catch( " + v);
 			addType(t);
-			add(") ");
-			expr(ecatch);
+			add(")");
+			block(ecatch);
 		case EObject(fl):
 			if( fl.length == 0 ) {
 				add("{}");
@@ -321,7 +370,8 @@ class Printer {
 				add("{\n");
 				for( i=>f in fl ) {
 					add(tabs);
-					add(f.name+" : ");
+					var name = isJson(f.name) ? "\"" + f.name + "\"" : f.name;
+					add(name+" : ");
 					expr(f.e);
 					if( i != fl.length - 1 ) add(",");
 					add("\n");
@@ -349,14 +399,14 @@ class Printer {
 					if( first ) first = false else add(", ");
 					expr(v);
 				}
-				add(": ");
-				expr(c.expr);
+				add(":");
+				block(c.expr, true);
 				add(";\n");
 			}
 			if( def != null ) {
 				add(tabs);
 				add("default: ");
-				expr(def);
+				block(def, true);
 				add(";\n");
 			}
 			tabs = tabs.substr(1);

@@ -1,5 +1,8 @@
 package;
 
+import hscript.Interp;
+import hscript.Expr;
+
 @:access(hscript.Interp)
 @:access(hscript.Parser)
 class HScriptRunner {
@@ -23,27 +26,29 @@ class HScriptRunner {
 	public function run() {}
 	public function teardown() {}
 
+	private var lastExpr:Expr;
+
 	public function execute(script:String):Dynamic {
 		var interp = clearPrevious ? getNewInterp() : this.interp;
-		var expr = Util.parse(headerCode + script + tailCode);
-		if(expr == null)
+		lastExpr = Util.parse(headerCode + script + tailCode);
+		if(lastExpr == null)
 			return "ERROR";
 		if (clearPrevious)
-			return interp.execute(expr);
+			return interp.execute(lastExpr);
 		else
-			return interp.exprReturn(expr);
+			return interp.exprReturn(lastExpr);
 	}
 
 	public function executeWithVars(script:String, vars:Dynamic):Dynamic {
 		var interp = clearPrevious ? getNewInterp() : this.interp;
-		var expr = Util.parse(headerCode + script + tailCode);
-		if(expr == null)
+		lastExpr = Util.parse(headerCode + script + tailCode);
+		if(lastExpr == null)
 			return "ERROR";
 		for(v in Reflect.fields(vars))
 			interp.variables.set(v, Reflect.field(vars, v));
 		if (clearPrevious)
-			return interp.execute(expr);
+			return interp.execute(lastExpr);
 		else
-			return interp.exprReturn(expr);
+			return interp.exprReturn(lastExpr);
 	}
 }

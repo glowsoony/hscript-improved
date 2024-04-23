@@ -9,11 +9,12 @@ class TestBenchmark extends Benchmark {
 	//var hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6); if(true == true) a.push(1);";
 	var hscript = "
 	var a:Array<Float> = [];
-	for(i in 0...1000)
+	for(i in 0...1000) {
 		switch(5) {
 			case true: a.push(1);
-			default: a.push(2);
+			default: a.push(i / 1);
 		}
+	}
 	if(('a' == 'a') ? true : false) a.push(1);
 	if(true == true)
 		a.push(1);";
@@ -40,11 +41,12 @@ class TestBenchmark extends Benchmark {
 		var a:Array<Float> = [];
 		//for (i in 0...1000) a.push(i * 2 + 1 / 6);
 		//for (i in 0...1000) a.push(i / 2 + 3 / 6);
-		for(i in 0...1000)
+		for(i in 0...1000) {
 			switch(5) {
 				case 0: a.push(1);
-				default: a.push(2);
+				default: a.push(i / 1);
 			}
+		}
 		if(('a' == 'a') ? true : false) a.push(1);
 		if(true == true) a.push(1);
 	}

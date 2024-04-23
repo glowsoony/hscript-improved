@@ -1,5 +1,7 @@
 package tests;
 
+import hscript.Printer;
+
 @:access(hscript.Interp)
 @:access(hscript.Parser)
 class TestCase extends HScriptRunner {
@@ -10,7 +12,11 @@ class TestCase extends HScriptRunner {
 			executeWithVars(script, vars);
 		else
 			execute(script);
-		Util.assertEq(result, expected, message, pos);
+		if(!Util.assertEq(result, expected, message, pos)) {
+			Sys.println("> " + Printer.convertExprToString(lastExpr));
+			return false;
+		}
+		return true;
 	}
 
 	public function assertNeq(script:String, expected:Dynamic, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
@@ -20,6 +26,10 @@ class TestCase extends HScriptRunner {
 			executeWithVars(script, vars);
 		else
 			execute(script);
-		Util.assertNeq(result, expected, message, pos);
+		if(!Util.assertNeq(result, expected, message, pos)) {
+			Sys.println("> " + Printer.convertExprToString(lastExpr));
+			return false;
+		}
+		return true;
 	}
 }

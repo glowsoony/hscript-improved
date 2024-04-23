@@ -6,10 +6,12 @@ class Util {
 	public static function assert(value:Bool, message:String, ?pos:haxe.PosInfos) {
 		if (value) {
 			passedTestUnits++;
+			return true;
 		} else {
 			Sys.println("Assertion failed: " + message);
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
+			return false;
 		}
 	}
 
@@ -26,10 +28,12 @@ class Util {
 
 		if (passed) {
 			passedTestUnits++;
+			return true;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
+			return false;
 		}
 	}
 
@@ -44,10 +48,12 @@ class Util {
 
 		if (passed) {
 			passedTestUnits++;
+			return true;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
+			return false;
 		}
 	}
 

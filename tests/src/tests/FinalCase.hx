@@ -22,8 +22,6 @@ class FinalCase extends TestCase {
 
         var i = 5; var x = 10;
 
-		hscript.Parser.optimize = false;
-
 		assertDisplay("(i - x) * 30 + 90", ((i-x) * 30) + 90);
 		assertDisplay("i - x * 30 + 90", i-x * 30 + 90);
 
@@ -33,6 +31,13 @@ class FinalCase extends TestCase {
 
 		assertDisplay("x * 30 / i + 90", x * 30 / i + 90);
 		//assertEq("(x * 30) / i + 90", x * 30 / i + 90);
+
+		// (_) -> {a = false;}
+		// Shouldnt be converted to  (_) -> return {a = false;}
+
+		Util.parse("openCodesList(false, codesOpened ? false : true, previousOpen != open ? true : false);");
+		Util.parse("openCodesList(false, 'HELLO' ? false : false, 'WORLD' ? true : true);");
+		Util.parse('FlxTween.tween(newSprite, {"scale.x": 1, "scale.y": 1, alpha: 1, angle: 0}, 0.3, {ease: FlxEase.qaudInOut});');
 	}
 
 	function assertDisplay(script:String, expected:Dynamic) {
