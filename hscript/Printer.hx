@@ -113,7 +113,7 @@ class Printer {
 			add("??NULL??");
 			return;
 		}
-		switch( #if hscriptPos e.e #else e #end ) {
+		switch( Tools.expr(e) ) {
 		case EImport(c, n):
 			add("import " + c);
 			if(n != null)
@@ -127,6 +127,7 @@ class Printer {
 			}
 			add(' {\n');
 			tabs += "\t";
+			// TODO: Print fields
 			//for(field in fields) {
 			//	expr(field);
 			//}
@@ -162,15 +163,43 @@ class Printer {
 					add(";\n");
 				}
 				tabs = tabs.substr(1);
+				add(tabs);
 				add("}");
 			}
 		case EField(e, f, s):
 			expr(e);
 			add((s == true ? "?." : ".") + f);
 		case EBinop(op, e1, e2):
-			expr(e1);
+			var shouldParen = false;
+			var op1 = switch(Tools.expr(e1)) {
+				case EBinop(op, _, _): op;
+				case EConst(_): "_";
+				case EIdent(_): "_";
+				default: null;
+			}
+			var op2 = switch(Tools.expr(e2)) {
+				case EBinop(op, _, _): op;
+				case EConst(_): "_";
+				case EIdent(_): "_";
+				default: null;
+			}
+			var paran = Tools.checkOpPrecedence(op, op1, op2);
+
+			if(paran == 0 || paran == 2) {
+				add("(");
+				expr(e1);
+				add(")");
+			} else {
+				expr(e1);
+			}
 			add(" " + op + " ");
-			expr(e2);
+			if(paran == 1 || paran == 2) {
+				add("(");
+				expr(e2);
+				add(")");
+			} else {
+				expr(e2);
+			}
 		case EUnop(op, pre, e):
 			if( pre ) {
 				add(op);
@@ -182,13 +211,13 @@ class Printer {
 		case ECall(e, args):
 			if( e == null )
 				expr(e);
-			else switch( #if hscriptPos e.e #else e #end ) {
-			case EField(_), EIdent(_), EConst(_):
-				expr(e);
-			default:
-				add("(");
-				expr(e);
-				add(")");
+			else switch( Tools.expr(e) ) {
+				case EField(_), EIdent(_), EConst(_):
+					expr(e);
+				default:
+					add("(");
+					expr(e);
+					add(")");
 			}
 			add("(");
 			var first = true;
@@ -290,13 +319,15 @@ class Printer {
 			} else {
 				tabs += "\t";
 				add("{\n");
-				for( f in fl ) {
+				for( i=>f in fl ) {
 					add(tabs);
 					add(f.name+" : ");
 					expr(f.e);
-					add(",\n");
+					if( i != fl.length - 1 ) add(",");
+					add("\n");
 				}
 				tabs = tabs.substr(1);
+				add(tabs);
 				add("}");
 			}
 		case ETernary(c,e1,e2):
@@ -308,8 +339,10 @@ class Printer {
 		case ESwitch(e, cases, def):
 			add("switch( ");
 			expr(e);
-			add(") {");
+			add(" ) {\n");
+			tabs += "\t";
 			for( c in cases ) {
+				add(tabs);
 				add("case ");
 				var first = true;
 				for( v in c.values ) {
@@ -321,10 +354,13 @@ class Printer {
 				add(";\n");
 			}
 			if( def != null ) {
+				add(tabs);
 				add("default: ");
 				expr(def);
 				add(";\n");
 			}
+			tabs = tabs.substr(1);
+			add(tabs);
 			add("}");
 		case EMeta(name, args, e):
 			add("@");

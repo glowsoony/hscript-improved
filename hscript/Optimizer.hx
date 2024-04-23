@@ -10,11 +10,10 @@ class Optimizer {
 		if(s == null)
 			return null;
 
-		#if hscriptPos
-		var e = s.e;
-		#else
-		var e = s;
-		#end
+		var e = Tools.expr(s);
+
+		// TODO: Convert EBinOp(+, a, EUnop(-, b)) to EBinOp(-, a, b) aka (a - b)
+
 		switch(e) {
 			// Parse all expressions and recreate the AST
 			case EBlock(exprs):
@@ -22,7 +21,34 @@ class Optimizer {
 					if(Tools.expr(v).match(EBlock([]))) return false; // Remove empty blocks
 					return true;
 				});
-				return mk(EBlock(exprs), s);
+
+				var newExprs = [];
+				for(e in exprs) {
+					switch(Tools.expr(e)) {
+						case EBlock(iex):
+							var declares = false;
+							for(ie in iex) {
+								declares = switch(Tools.expr(ie)) {
+									case EVar(_): true;// has a declaration
+									case EFunction(_): true;// has a declaration
+									default: declares;
+								}
+								if(declares) break;
+							}
+							if(!declares) {
+								for(ex in iex)
+									newExprs.push(ex);
+							} else {
+								newExprs.push(e);
+							}
+						case EReturn(_): // remove stuff that are after a return
+							newExprs.push(e);
+							break;
+						default:
+							newExprs.push(e);
+					}
+				}
+				return mk(EBlock(newExprs), s);
 
 			case EIf(econd, e1, e2):
 				var econd = optimize(econd);
@@ -41,6 +67,24 @@ class Optimizer {
 					}
 				}
 				return mk(EIf(econd, e1, e2), s);
+
+			case ETernary(econd, e1, e2):
+				var econd = optimize(econd);
+				var e1 = optimize(e1);
+				var e2 = optimize(e2);
+				if(isConstant(econd)) {
+					var econd = getConstant(econd);
+					if(econd == true) {
+						if(e1 == null)
+							return mk(EBlock([]), s);
+						return mk(EParent(e1), s);
+					} else {
+						if(e2 == null)
+							return mk(EBlock([]), s);
+						return mk(EParent(e2), s);
+					}
+				}
+				return mk(ETernary(econd, e1, e2), s);
 			case EWhile(econd, e):
 				var econd = optimize(econd);
 				var e = optimize(e);
@@ -105,7 +149,16 @@ class Optimizer {
 
 			case EParent(e):
 				e = optimize(e);
-				return mk(EParent(e), s);
+				//return mk(EParent(e), s);
+				return mk(Tools.expr(e), s);
+
+			case ECheckType(e, t):
+				e = optimize(e);
+				return mk(ECheckType(e, t), s);
+
+			case EMeta(name, args, e):
+				e = optimize(e);
+				return mk(EMeta(name, args, e), s);
 
 			case ENew(cl, args):
 				args = args.map((v) -> optimize(v));
@@ -116,6 +169,13 @@ class Optimizer {
 					v.e = optimize(v.e);
 				});
 				return mk(EObject(fl), s);
+
+			case EImport(c, n):
+				return mk(EImport(c, n), s);
+
+			case EClass(name, fields, extend, interfaces): // Possible code not working
+				fields = fields.map((v) -> optimize(v));
+				return mk(EClass(name, fields, extend, interfaces), s);
 
 			case EFunction(args, e, name, ret, isPublic, isStatic, isOverride):
 				args.map((v) -> {
@@ -132,6 +192,40 @@ class Optimizer {
 					v.expr = optimize(v.expr);
 				});
 				def = optimize(def);
+
+				if(isConstant(e)) {
+					var econd = getConstant(e);
+
+					for(c in cases) {
+						for(v in c.values) {
+							if(isConstant(v)) {
+								var value = getConstant(v);
+								if(value == econd)
+									return mk(Tools.expr(c.expr), s);
+							}
+						}
+					}
+
+					var isAllCasesConstant = true;
+					for(c in cases) {
+						for(v in c.values) {
+							if(!isConstant(v)) {
+								isAllCasesConstant = false;
+								break;
+							}
+						}
+					}
+					if(isAllCasesConstant) {
+						#if debug
+						//trace("Didnt find any cases that match");
+						#end
+						if(def != null)
+							return mk(Tools.expr(def), s);
+						else
+							return mk(EBlock([]), s);
+					}
+				}
+
 				return mk(ESwitch(e, cases, def), s);
 
 			case EArrayDecl(arr, wantedType):

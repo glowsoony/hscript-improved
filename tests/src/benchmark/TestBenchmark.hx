@@ -6,20 +6,46 @@ class TestBenchmark extends Benchmark {
 		super("Test", 10000);
 	}
 
-	var hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6); if(true == true) a.push(1);";
+	//var hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6); if(true == true) a.push(1);";
+	var hscript = "
+	var a:Array<Float> = [];
+	for(i in 0...1000)
+		switch(5) {
+			case true: a.push(1);
+			default: a.push(2);
+		}
+	if(('a' == 'a') ? true : false) a.push(1);
+	if(true == true)
+		a.push(1);";
+
+	function test() {
+		return 5;
+	}
+
+	var aaa = null;
 
 	public override function reset() {
 		super.reset();
-		a = [];
-		if(interp != null)
-			interp.variables.remove("a");
+		aaa = {
+			test: test
+		};
 		if(expr == null)
 			cacheExpr(hscript);
+		interp.variables.remove("a");
+		//interp.variables.set("aaa", aaa);
+		interp.variables.set("test", test);
 	}
 
-    public var a:Array<Float> = [];
 	public override function haxeBenchmark() {
-		for (i in 0...1000) a.push(i * 2 + 1 / 6);
+		var a:Array<Float> = [];
+		//for (i in 0...1000) a.push(i * 2 + 1 / 6);
+		//for (i in 0...1000) a.push(i / 2 + 3 / 6);
+		for(i in 0...1000)
+			switch(5) {
+				case 0: a.push(1);
+				default: a.push(2);
+			}
+		if(('a' == 'a') ? true : false) a.push(1);
 		if(true == true) a.push(1);
 	}
 

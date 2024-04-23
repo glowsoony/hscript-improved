@@ -38,6 +38,7 @@ class Main {
 		runTest("SwitchStatement", new SwitchCase());
 		// TODO: UnicodeCase.hx?
 		// TODO: UnicodeStringCase.hx?
+		runTest("Final", new FinalCase());
 		Util.printTestResults();
 		#end
 	}

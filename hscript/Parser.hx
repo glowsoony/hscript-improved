@@ -44,7 +44,7 @@ enum Token {
 }
 
 class Parser {
-	public static var optimize = true;
+	public static var optimize = #if NO_HSCRIPT_OPTIMIZE false #else true #end;
 
 	// config / variables
 	public var line : Int;
@@ -474,7 +474,7 @@ class Parser {
 			if( opPriority.get(op) < 0 )
 				return makeUnop(op,parseExpr());
 			return unexpected(tk);
-		case TBkOpen:
+		case TBkOpen: // [
 			var a = new Array();
 			tk = token();
 			while( tk != TBkClose && (!resumeErrors || tk != TEof) ) {
@@ -487,7 +487,7 @@ class Parser {
 				if( tk == TComma )
 					tk = token();
 			}
-			if( a.length == 1 && a[0] != null ) // What is this for???
+			if( a.length == 1 && a[0] != null ) // Checks if its a for comprehension
 				switch( expr(a[0]) ) {
 					case EFor(_), EForKeyValue(_), EWhile(_), EDoWhile(_):
 						var tmp = "__a_" + (uid++);

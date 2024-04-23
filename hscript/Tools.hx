@@ -122,4 +122,76 @@ class Tools {
 		}
 	}
 
+	static var priorities = [
+		["%"],
+		["*", "/"],
+		["+", "-"],
+		["<<", ">>", ">>>"],
+		["|", "&", "^"],
+		["==", "!=", ">", "<", ">=", "<="],
+		["..."],
+		["&&"],
+		["||"],
+		["=","+=","-=","*=","/=","%=","<<=",">>=",">>>=","|=","&=","^=","=>","??"+"="],
+		["->", "??"],
+		["is"]
+	];
+	public static function checkOpPrecedence(mainOp:String, leftOp:String, rightOp:String):Int {
+		var mainOpGroup = getOpGroup(mainOp);
+		var leftOpGroup = getOpGroup(leftOp);
+		var rightOpGroup = getOpGroup(rightOp);
+
+		var leftParam = false;
+		var rightParam = false;
+
+		if(leftOpGroup > mainOpGroup && leftOpGroup != -1) leftParam = true;
+		if(rightOpGroup > mainOpGroup && rightOpGroup != -1) rightParam = true;
+
+		if(!leftParam && !rightParam) {
+			var mainOpIndex = getOpIndex(mainOp);
+			var leftOpIndex = getOpIndex(leftOp);
+			var rightOpIndex = getOpIndex(rightOp);
+
+			if(mainOpGroup == rightOpGroup) {
+				if(rightOpIndex < mainOpIndex) rightParam = true;
+			}
+			if(leftOpGroup == mainOpGroup) {
+				if(leftOpIndex < mainOpIndex) leftParam = true;
+			}
+		}
+
+		// Convert to index
+		if(!leftParam && !rightParam) return -1;
+		if(leftParam && rightParam) return 2;
+		if(leftParam) return 0;
+		if(rightParam) return 1;
+		return -1;
+	}
+
+	public static function getOpIndex(op:String):Int {
+		if(op == "_") return -1;
+		var i = 0;
+		for(p in priorities) {
+			for(pp in p) {
+				if(op == pp)
+					return i;
+				i++;
+			}
+		}
+		return -1;
+	}
+
+	public static function getOpGroup(op:String):Int {
+		if(op == "_") return -1;
+		var i = 0;
+		for(p in priorities) {
+			for(pp in p) {
+				if(op == pp)
+					return i;
+			}
+			i++;
+		}
+		return -1;
+	}
+
 }
