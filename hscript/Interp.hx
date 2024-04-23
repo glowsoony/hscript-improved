@@ -43,10 +43,37 @@ private enum Stop {
 	SReturn;
 }
 
+enum abstract ScriptObjectType(Int) {
+	var SClass;
+	var SObject;
+	var SStaticClass;
+	var SNull;
+}
+
 class Interp {
 	public var scriptObject(default, set):Dynamic;
+	private var _hasScriptObject(default, null):Bool = false;
+	private var _scriptObjectType(default, null):ScriptObjectType = SNull;
 	public function set_scriptObject(v:Dynamic) {
-		__instanceFields = (v == null) ? [] : Type.getInstanceFields(Type.getClass(v));
+		switch(Type.typeof(v)) {
+			case TClass(c): // Class Access
+				__instanceFields = Type.getInstanceFields(c);
+				_scriptObjectType = SClass;
+			case TObject: // Object Access or Static Class Access
+				var cls = Type.getClass(v);
+				switch(Type.typeof(cls)) {
+					case TClass(c): // Static Class Access
+						__instanceFields = Type.getInstanceFields(c);
+						_scriptObjectType = SStaticClass;
+					default: // Object Access
+						__instanceFields = Reflect.fields(v);
+						_scriptObjectType = SObject;
+				}
+			default: // Null or other
+				__instanceFields = [];
+				_scriptObjectType = SNull;
+		}
+		_hasScriptObject = v != null;
 		return scriptObject = v;
 	}
 	public var errorHandler:Error->Void;
@@ -183,14 +210,13 @@ class Interp {
 		assignOp("<<=", function(v1, v2) return v1 << v2);
 		assignOp(">>=", function(v1, v2) return v1 >> v2);
 		assignOp(">>>=", function(v1, v2) return v1 >>> v2);
-		assignOp("??=", function(v1, v2) return v1 == null ? v2 : v1);
+		assignOp("??"+"=", function(v1, v2) return v1 == null ? v2 : v1);
 	}
 
 	function checkIsType(e1,e2): Bool {
 		var expr1:Dynamic = expr(e1);
 
-		return switch(Tools.expr(e2))
-		{
+		return switch(Tools.expr(e2)) {
 			case EIdent("Class"):
 				Std.isOfType(expr1, Class);
 			case EIdent("Map") | EIdent("IMap"):
@@ -216,8 +242,8 @@ class Interp {
 			case EIdent(id):
 				var l = locals.get(id);
 				if (l == null) {
-					if (!variables.exists(id) && !staticVariables.exists(id) && !publicVariables.exists(id) && scriptObject != null) {
-						if (Type.typeof(scriptObject) == TObject) {
+					if (!variables.exists(id) && !staticVariables.exists(id) && !publicVariables.exists(id) && _hasScriptObject) {
+						if (_scriptObjectType == SObject) {
 							Reflect.setField(scriptObject, id, v);
 						} else {
 							if (isBypassAccessor) {
@@ -226,6 +252,7 @@ class Interp {
 									return v;
 								}
 							}
+
 							if (__instanceFields.contains(id)) {
 								Reflect.setProperty(scriptObject, id, v);
 							} else if (__instanceFields.contains('set_$id')) { // setter
@@ -275,10 +302,16 @@ class Interp {
 				var l = locals.get(id);
 				v = fop(expr(e1), expr(e2));
 				if (l == null) {
-					if (__instanceFields.contains(id)) {
-						Reflect.setProperty(scriptObject, id, v);
-					} else if (__instanceFields.contains('set_$id')) { // setter
-						Reflect.getProperty(scriptObject, 'set_$id')(v);
+					if(_hasScriptObject) {
+						if(_scriptObjectType == SObject) {
+							Reflect.setField(scriptObject, id, v);
+						} else if (__instanceFields.contains(id)) {
+							Reflect.setProperty(scriptObject, id, v);
+						} else if (__instanceFields.contains('set_$id')) { // setter
+							Reflect.getProperty(scriptObject, 'set_$id')(v);
+						} else {
+							setVar(id, v);
+						}
 					} else {
 						setVar(id, v);
 					}
@@ -454,11 +487,11 @@ class Interp {
 			if (map.exists(id))
 				return map[id];
 
-		if (scriptObject != null) {
+		if (_hasScriptObject) {
 			// search in object
 			if (id == "this") {
 				return scriptObject;
-			} else if ((Type.typeof(scriptObject) == TObject) && Reflect.hasField(scriptObject, id)) {
+			} else if (_scriptObjectType == SObject && Reflect.hasField(scriptObject, id)) {
 				return Reflect.field(scriptObject, id);
 			} else {
 				if (__instanceFields.contains(id)) {
@@ -980,21 +1013,32 @@ class Interp {
 	public static var getRedirects:Map<String, Dynamic->String->Dynamic> = [];
 	public static var setRedirects:Map<String, Dynamic->String->Dynamic->Dynamic> = [];
 
+	private static var _getRedirect:Dynamic->String->Dynamic;
+	private static var _setRedirect:Dynamic->String->Dynamic->Dynamic;
+
+	public var useRedirects:Bool = true;
+
+	static function getClassType(o:Dynamic, ?cls:Class<Any>):String {
+		return switch (Type.typeof(o)) {
+			case TNull: "Null";
+			case TInt: "Int";
+			case TFloat: "Float";
+			case TBool: "Bool";
+			case _:
+				if (cls == null)
+					cls = Type.getClass(o);
+				cls != null ? Type.getClassName(cls) : null;
+		};
+	}
+
 	function get(o:Dynamic, f:String):Dynamic {
 		if (o == null)
 			error(EInvalidAccess(f));
 		return {
-			var redirect:Dynamic->String->Dynamic = null;
 			var cls = Type.getClass(o);
-			var cl:Null<String> = switch (Type.typeof(o)) {
-				case TNull: "Null";
-				case TInt: "Int";
-				case TFloat: "Float";
-				case TBool: "Bool";
-				case _: cls != null ? Type.getClassName(cls) : null;
-			};
-			if (cl != null && getRedirects.exists(cl) && (redirect = getRedirects[cl]) != null) {
-				return redirect(o, f);
+			var cl:Null<String> = getClassType(o, cls);
+			if (useRedirects && cl != null && getRedirects.exists(cl) && (_getRedirect = getRedirects[cl]) != null) {
+				return _getRedirect(o, f);
 			} else if (o is IHScriptCustomBehaviour) {
 				var obj = cast(o, IHScriptCustomBehaviour);
 				return obj.hget(f);
@@ -1018,17 +1062,9 @@ class Interp {
 		if (o == null)
 			error(EInvalidAccess(f));
 
-		var redirect:Dynamic->String->Dynamic->Dynamic = null;
-		var cls = Type.getClass(o);
-		var cl:Null<String> = switch (Type.typeof(o)) {
-			case TNull: "Null";
-			case TInt: "Int";
-			case TFloat: "Float";
-			case TBool: "Bool";
-			case _: cls != null ? Type.getClassName(cls) : null;
-		};
-		if (cl != null && setRedirects.exists(cl) && (redirect = setRedirects[cl]) != null)
-			return redirect(o, f, v);
+		var cl:Null<String> = getClassType(o);
+		if (useRedirects && cl != null && setRedirects.exists(cl) && (_setRedirect = setRedirects[cl]) != null)
+			return _setRedirect(o, f, v);
 		else if (o is IHScriptCustomBehaviour) {
 			var obj = cast(o, IHScriptCustomBehaviour);
 			return obj.hset(f, v);
@@ -1042,7 +1078,7 @@ class Interp {
 	}
 
 	function fcall(o:Dynamic, f:String, args:Array<Dynamic>):Dynamic {
-		if(o == CustomClassHandler.staticHandler && scriptObject != null) {
+		if(o == CustomClassHandler.staticHandler && _hasScriptObject) {
 			return Reflect.callMethod(scriptObject, Reflect.field(scriptObject, "_HX_SUPER__" + f), args);
 		}
 		return call(o, get(o, f), args);

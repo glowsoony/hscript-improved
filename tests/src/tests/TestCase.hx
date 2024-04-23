@@ -8,7 +8,7 @@ class TestCase extends HScriptRunner {
 			message = script;
 		Util.assertEq(execute(headerCode + script + tailCode), expected, message);
 	}
-	
+
 	public function assertNeq(script:String, expected:Dynamic, ?message:String) {
 		if(message == null)
 			message = script;

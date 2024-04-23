@@ -124,10 +124,10 @@ var c = 3;
 
 		#if (haxe >= "4.3.0")
 		a ??= b;
-		assertEq("a ?"+"?= b; a", a);
+		assertEq("a ??"+"= b; a", a);
 		#else
 		if(a == null) a = b;
-		assertEq("a ?"+"?= b; a", a);
+		assertEq("a ??"+"= b; a", a);
 		#end
 
 		headerCode = "
@@ -140,10 +140,10 @@ var c = 3;
 
 		#if (haxe >= "4.3.0")
 		a ??= b;
-		assertEq("a ?"+"?= b; a", a);
+		assertEq("a ??"+"= b; a", a);
 		#else
 		if(a == null) a = b;
-		assertEq("a ?"+"?= b; a", a);
+		assertEq("a ??"+"= b; a", a);
 		#end
 	}
 

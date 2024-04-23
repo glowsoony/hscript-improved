@@ -3,7 +3,7 @@ package benchmark;
 @:dce(off)
 class TestBenchmark extends Benchmark {
 	public function new() {
-		super("Test", 5000);
+		super("Test", 10000);
 	}
 
 	public override function reset() {
