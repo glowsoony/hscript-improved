@@ -38,7 +38,7 @@ enum Token {
 	TBkOpen;
 	TBkClose;
 	TQuestion;
-	TDoubleDot;
+	TColon;
 	TMeta( s : String );
 	TPrepro( s : String );
 }
@@ -344,7 +344,7 @@ class Parser {
 					unexpected(tk);
 					break;
 			}
-			ensure(TDoubleDot);
+			ensure(TColon);
 			fl.push(new ObjectField(id, parseExpr()));
 			tk = token();
 			switch( tk ) {
@@ -389,7 +389,7 @@ class Parser {
 			switch( tk ) {
 				case TPClose:
 					return parseExprNext(mk(EParent(e),p1,tokenMax));
-				case TDoubleDot:
+				case TColon:
 					var t = parseType();
 					tk = token();
 					switch( tk ) {
@@ -412,37 +412,37 @@ class Parser {
 			return unexpected(tk);
 		case TBrOpen:
 			tk = token();
-			switch( tk ) {
-			case TBrClose:
-				return parseExprNext(mk(EObject([]),p1));
-			case TId(_):
-				var tk2 = token();
-				push(tk2);
-				push(tk);
-				switch( tk2 ) {
-					case TDoubleDot:
-						return parseExprNext(parseObject(p1));
-					default:
-				}
-			case TConst(c):
-				if( allowJSON ) {
-					switch( c ) {
-						case CString(_):
-							var tk2 = token();
-							push(tk2);
-							push(tk);
-							switch( tk2 ) {
-								case TDoubleDot:
-									return parseExprNext(parseObject(p1));
-								default:
-							}
-						default:
-							push(tk);
-					}
-				} else
+				switch( tk ) {
+				case TBrClose:
+					return parseExprNext(mk(EObject([]),p1));
+				case TId(_):
+					var tk2 = token();
+					push(tk2);
 					push(tk);
-			default:
-				push(tk);
+					switch( tk2 ) {
+						case TColon:
+							return parseExprNext(parseObject(p1));
+						default:
+					}
+				case TConst(c):
+					if( allowJSON ) { // Json string keys
+						switch( c ) {
+							case CString(_):
+								var tk2 = token();
+								push(tk2);
+								push(tk);
+								switch( tk2 ) {
+									case TColon:
+										return parseExprNext(parseObject(p1));
+									default:
+								}
+							default:
+								push(tk);
+						}
+					} else
+						push(tk);
+				default:
+					push(tk);
 			}
 			var a = new Array();
 			while( true ) {
@@ -511,7 +511,7 @@ class Parser {
 	function parseLambda( args : Array<Argument>, pmin ) {
 		while( true ) {
 			var id = getIdent();
-			var t = maybe(TDoubleDot) ? parseType() : null;
+			var t = maybe(TColon) ? parseType() : null;
 			args.push(new Argument(id, t));
 			var tk = token();
 			switch( tk ) {
@@ -726,7 +726,7 @@ class Parser {
 			var tk = token();
 			var t = null;
 			nextType = null;
-			if( tk == TDoubleDot && allowTypes ) {
+			if( tk == TColon && allowTypes ) {
 				t = parseType();
 				tk = token();
 
@@ -961,7 +961,7 @@ class Parser {
 			ensureToken(TId("catch"));
 			ensure(TPOpen);
 			var vname = getIdent();
-			ensure(TDoubleDot);
+			ensure(TColon);
 			var t = null;
 			if( allowTypes )
 				t = parseType();
@@ -988,7 +988,7 @@ class Parser {
 							switch( tk ) {
 								case TComma | TOp("|"):
 									// next expr
-								case TDoubleDot:
+								case TColon:
 									break;
 								default:
 									unexpected(tk);
@@ -1017,7 +1017,7 @@ class Parser {
 							mk(EBlock(exprs), pmin(exprs[0]), pmax(exprs[exprs.length - 1]));
 					case TId("default"):
 						if( def != null ) unexpected(tk);
-						ensure(TDoubleDot);
+						ensure(TColon);
 						var exprs = [];
 						while( true ) {
 							tk = token();
@@ -1093,7 +1093,7 @@ class Parser {
 				return parseExprNext(mk(EArray(e1,e2),pmin(e1)));
 			case TQuestion:
 				var e2 = parseExpr();
-				ensure(TDoubleDot);
+				ensure(TColon);
 				var e3 = parseExpr();
 				return mk(ETernary(e1,e2,e3),pmin(e1),pmax(e3));
 			default:
@@ -1125,7 +1125,7 @@ class Parser {
 				args.push(arg);
 				if( opt ) arg.opt = true;
 				if( allowTypes ) {
-					if( maybe(TDoubleDot) )
+					if( maybe(TColon) )
 						arg.t = parseType();
 					if( maybe(TOp("="))) {
 						arg.value = parseExpr();
@@ -1152,7 +1152,7 @@ class Parser {
 		var ret = null;
 		if( allowTypes ) {
 			var tk = token();
-			if( tk != TDoubleDot )
+			if( tk != TColon )
 				push(tk);
 			else
 				ret = parseType();
@@ -1228,7 +1228,7 @@ class Parser {
 				}
 
 				switch [a, b] {
-					case [TPClose, _] | [TId(_), TDoubleDot]:
+					case [TPClose, _] | [TId(_), TColon]:
 
 						var args = [for (arg in parseFunctionArgs()) {
 							switch arg.value {
@@ -1268,20 +1268,20 @@ class Parser {
 						case TBrClose: break;
 						case TId("var"):
 							var name = getIdent();
-							ensure(TDoubleDot);
+							ensure(TColon);
 							fields.push( { name : name, t : parseType(), meta : meta } );
 							meta = null;
 							ensure(TSemicolon);
 						case TId("final"):
 							var name = getIdent();
-							ensure(TDoubleDot);
+							ensure(TColon);
 							if( meta == null ) meta = [];
 							meta.push({ name : ":final", params : [] });
 							fields.push( { name : name, t : parseType(), meta : meta } );
 							meta = null;
 							ensure(TSemicolon);
 						case TId(name):
-							ensure(TDoubleDot);
+							ensure(TColon);
 							fields.push( { name : name, t : parseType(), meta : meta } );
 							t = token();
 							switch( t ) {
@@ -1517,7 +1517,7 @@ class Parser {
 						set = getIdent();
 						ensure(TPClose);
 					}
-					var type = maybe(TDoubleDot) ? parseType() : null;
+					var type = maybe(TColon) ? parseType() : null;
 					var expr = maybe(TOp("=")) ? parseExpr() : null;
 
 					if( expr != null ) {
@@ -1555,6 +1555,15 @@ class Parser {
 		return StringTools.fastCodeAt(input, readPos++);
 	}
 
+	static function convertHex(c:Int) {
+		return switch( c ) {
+			case 48,49,50,51,52,53,54,55,56,57: c - 48; // 0-9
+			case 65,66,67,68,69,70: c - 55; // A-F
+			case 97,98,99,100,101,102: c - 87; // a-f
+			default: -1;
+		}
+	}
+
 	function readString( until ) {
 		var c = 0;
 		var b = new StringBuf();
@@ -1564,6 +1573,18 @@ class Parser {
 		#if hscriptPos
 		var p1 = readPos - 1;
 		#end
+		var ce = ""; // current escape
+		var lc = 0; // last char
+		function readEscape() {
+			var c = lc = readChar();
+			if( StringTools.isEof(c) ) {
+				line = old;
+				error(EUnterminatedString, p1, p1);
+				return -1;
+			}
+			ce += String.fromCharCode(c);
+			return c;
+		}
 		while( true ) {
 			var c = readChar();
 			if( StringTools.isEof(c) ) {
@@ -1572,43 +1593,96 @@ class Parser {
 				break;
 			}
 			if( esc ) {
+				ce = "\\" + String.fromCharCode(c);
 				esc = false;
 				switch( c ) {
-				case 'n'.code: b.addChar('\n'.code);
-				case 'r'.code: b.addChar('\r'.code);
-				case 't'.code: b.addChar('\t'.code);
-				case "'".code, '"'.code, '\\'.code: b.addChar(c);
-				case '/'.code: if( allowJSON ) b.addChar(c) else invalidChar(c);
-				case "u".code:
-					if( !allowJSON ) invalidChar(c);
-					var k = 0;
-					for( i in 0...4 ) {
-						k <<= 4;
-						var char = readChar();
-						switch( char ) {
-						case 48,49,50,51,52,53,54,55,56,57: // 0-9
-							k += char - 48;
-						case 65,66,67,68,69,70: // A-F
-							k += char - 55;
-						case 97,98,99,100,101,102: // a-f
-							k += char - 87;
-						default:
-							if( StringTools.isEof(char) ) {
-								line = old;
-								error(EUnterminatedString, p1, p1);
+					case 'n'.code: b.addChar('\n'.code);
+					case 'r'.code: b.addChar('\r'.code);
+					case 't'.code: b.addChar('\t'.code);
+					case "'".code, '"'.code, '\\'.code: b.addChar(c);
+					case '/'.code: if( allowJSON ) b.addChar(c) else invalidChar(c);
+					case '0'.code | '1'.code | '2'.code | '3'.code | '4'.code | '5'.code | '6'.code | '7'.code: // Octal
+						var n = c - '0'.code;
+						var i = 0;
+						for( i in 0...2 ) { // 2 since we already read the first digit
+							var char = readEscape();
+							if(char == -1) break;
+
+							n = n * 8;
+							if( char >= '0'.code && char <= '7'.code ) {
+								n += char - '0'.code;
+							} else {
+								error(EInvalidEscape(ce), p1, p1);
+								break;
 							}
-							invalidChar(char);
 						}
-					}
-					b.addChar(k);
-				default: invalidChar(c);
+						b.addChar(n);
+					case "x".code:
+						if( !allowJSON ) invalidChar(c);
+						var k = 0;
+						for( i in 0...2 ) {
+							var char = readEscape();
+							if(char == -1) break;
+
+							k <<= 4;
+							var v = convertHex(char);
+							if( v == -1 ) {
+								error(EInvalidEscape(ce), p1, p1);
+							} else {
+								k += v;
+							}
+						}
+						b.addChar(k);
+					case "u".code:
+						if( !allowJSON ) invalidChar(c);
+						if( readEscape() == '{'.code ) { // unicode
+							var k = 0;
+							var i = 0;
+							while( true ) {
+								var char = readEscape();
+								if(char == -1 || char == '}'.code) break;
+								if( i > 6 ) {
+									error(EInvalidEscape(ce), p1, p1);
+									break;
+								}
+
+								k <<= 4;
+								var v = convertHex(char);
+								if( v == -1 ) {
+									error(EInvalidEscape(ce), p1, p1);
+								} else {
+									k += v;
+								}
+								i++;
+							}
+							b.addChar(k);
+							continue;
+						} else {
+							readPos--;
+						}
+						var k = 0;
+						for( i in 0...4 ) {
+							var char = readEscape();
+							if(char == -1) break;
+
+							k <<= 4;
+							var v = convertHex(char);
+							if( v == -1 ) {
+								error(EInvalidEscape(ce), p1, p1);
+							} else {
+								k += v;
+							}
+						}
+						b.addChar(k);
+					default:
+						error(EInvalidEscape(ce), p1, p1);
 				}
-			} else if( c == 92 )
+			} else if( c == "\\".code )
 				esc = true;
 			else if( c == until )
 				break;
 			else {
-				if( c == 10 ) line++;
+				if( c == '\n'.code ) line++;
 				b.addChar(c);
 			}
 		}
@@ -1839,7 +1913,7 @@ class Parser {
 
 				this.char = char;
 				return TQuestion;
-			case ":".code: return TDoubleDot;
+			case ":".code: return TColon;
 			case '='.code:
 				char = readChar();
 				if( char == '='.code )
@@ -2097,7 +2171,7 @@ class Parser {
 		case TBkOpen: "[";
 		case TBkClose: "]";
 		case TQuestion: "?";
-		case TDoubleDot: ":";
+		case TColon: ":";
 		case TMeta(id): "@" + id;
 		case TPrepro(id): "#" + id;
 		}

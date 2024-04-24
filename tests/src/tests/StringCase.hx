@@ -91,22 +91,6 @@ class StringCase extends TestCase {
 		assertEq('("a" > "b")', ("a" > "b"));
 		assertEq('("a" >= "b")', ("a" >= "b"));
 
-		Util.runKnownBug("String interpolation doesnt work", () -> {
-			assertEq("'${5}'", '${5}');
-			assertEq("'${5},${({})}'", '${5},${({})}');
-			assertEq("'${5},${\"Hello\"}'", '${5},${"Hello"}');
-			assertEq("'${5},${'Hello'}'", '${5},${'Hello'}');
-			assertEq("'$${5}'", '$${5}');
-			assertEq("'$${({})}'", '$${({})}');
-		});
-
-		assertEq('"$${5}"', "${5}");
-		assertEq('"$${5},$${({})}"', "${5},${({})}");
-		assertEq('"$${5},$${\\"Hello\\"}"', "${5},${\"Hello\"}");
-		assertEq('"$${5},$${\'Hello\'}"', "${5},${'Hello'}");
-
-
-
 		assertEq('"foo".toUpperCase()', "foo".toUpperCase());
 		assertEq('"_bar".toUpperCase()', "_bar".toUpperCase());
 		assertEq('"123b".toUpperCase()', "123b".toUpperCase());
@@ -119,6 +103,36 @@ class StringCase extends TestCase {
 		assertEq('"".toLowerCase()', "".toLowerCase());
 		assertEq('"a".toLowerCase()', "a".toLowerCase());
 
+		assertEqPrintable("' \\t\\n\\x0b\\x0c\\r16'", " \t\n\x0b\x0c\r16");
+		assertEqPrintable("' \\t\\n\\x0b\\x0c\\r0xa'", " \t\n\x0b\x0c\r0xa");
+		assertEqPrintable("' \\t\\n\\x0b\\x0c\\r1.6'", ' \t\n\x0b\x0c\r1.6');
+
+		assertEq('"$${5}"', "${5}");
+		assertEq('"$${5},$${({})}"', "${5},${({})}");
+		assertEq('"$${5},$${\\"Hello\\"}"', "${5},${\"Hello\"}");
+		assertEq('"$${5},$${\'Hello\'}"', "${5},${'Hello'}");
+
+		Util.runKnownBug("String interpolation doesnt work", () -> {
+			assertEq("'${5}'", '${5}');
+			assertEq("'${5},${({})}'", '${5},${({})}');
+			assertEq("'${5},${\"Hello\"}'", '${5},${"Hello"}');
+			assertEq("'${5},${'Hello'}'", '${5},${'Hello'}');
+			assertEq("'$${5}'", '$${5}');
+			assertEq("'$${({})}'", '$${({})}');
+		});
+
+		assertEqPrintable("'The \\x54\\141b\\tch\\141r\\141ct\\145r:\\n'", 'The \x54\141b\tch\141r\141ct\145r:\n');
+		assertEqPrintable("'\\t\\\"\\101scii\\\"\\n'", '\t\"\101scii\"\n');
+		assertEqPrintable("'\\tcontains\\n'", '\tcontains\n');
+		assertEqPrintable("'\\tspecial\\\\backslash\\\\codes,\\n'", '\tspecial\\backslash\\codes,\n');
+		assertEqPrintable("'\\tdouble quotes \\\"like this\\\",\\n'", '\tdouble quotes \"like this\",\n');
+		assertEqPrintable("'\\tsingle quotes \\'and this\\',\\n'", '\tsingle quotes \'and this\',\n');
+		assertEqPrintable("'\\tASCII bell\\x07and others.\\n'", '\tASCII bell\x07and others.\n');
+		assertEqPrintable("'Unicode samples: Greek \\u03B1 (alpha), smiley \\u263A,\\n'", 'Unicode samples: Greek \u03B1 (alpha), smiley \u263A,\n');
+		assertEqPrintable("'regional indicators \\u{1F1FA}\\u{1F1F8}, and musical note \\u{1F3B5}.'", 'regional indicators \u{1F1FA}\u{1F1F8}, and musical note \u{1F3B5}.');
+		assertEqPrintable("'\\u{10FFFF}\\u{1F1FA}\\u{3042}\\u{3B1}\\u{F1}\\u{A}'", '\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}');
+
+		trace(hscript.Printer.getEscapedString("\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}"));
 	}
 
 	override function teardown() {

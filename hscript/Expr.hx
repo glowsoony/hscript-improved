@@ -165,6 +165,7 @@ enum Error
 	ECustom( msg : String );
 	EInvalidClass( className : String);
 	EAlreadyExistingClass( className : String);
+	EInvalidEscape( s : String );
 }
 
 enum ModuleDecl {

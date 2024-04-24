@@ -51,6 +51,8 @@ class FinalCase extends TestCase {
 		assertEq("TestEnum.B", TestEnum.B);
 		assertEq("TestEnum.C(1, 2)", TestEnum.C(1, 2));
 		assertEq("TestEnum.D(1, 2, 3)", TestEnum.D(1, 2, 3));
+
+		// Test EOF with preprocessor
 	}
 
 	function assertDisplay(script:String, expected:Dynamic) {

@@ -1,4 +1,5 @@
 import hscript.Expr.Error;
+import hscript.Printer;
 
 using StringTools;
 
@@ -31,6 +32,28 @@ class Util {
 			return true;
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
+			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
+			failedTestUnits++;
+			return false;
+		}
+	}
+
+	public static function assertEqPrintable(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
+		var passed = value == expected;
+		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
+			if (deepCompareArrays(value, expected))
+				passed = true;
+		}
+		else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
+			if(Type.enumEq(value, expected))
+				passed = true;
+		}
+
+		if (passed) {
+			passedTestUnits++;
+			return true;
+		} else {
+			Sys.println("Assertion failed: " + message + " Expected: " + Printer.getEscapedString(expected) + " Got: " + Printer.getEscapedString(value));
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
 			failedTestUnits++;
 			return false;

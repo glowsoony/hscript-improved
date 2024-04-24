@@ -152,6 +152,50 @@ class Printer {
 		return false;
 	}
 
+	static inline function isPrintable( c : Int ) {
+		return c >= 32 && c <= 126;
+	}
+
+	static inline function hex( c : Int, ?len : Int = 2 ) {
+		return StringTools.hex(c, len).toLowerCase();
+	}
+
+	public static function getEscapedString( s : String ) {
+		var buf = new StringBuf();
+		#if target.unicode
+		var s = new UnicodeString(s);
+		#end
+		for( i in 0...s.length ) {
+			#if target.unicode
+			var c:Null<Int> = s.charCodeAt(i);
+			#else
+			var c:Null<Int> = StringTools.unsafeCodeAt(s, i);
+			#end
+			switch( c ) {
+				case '"'.code: buf.add('\\"');
+				case '\\'.code: buf.add('\\\\');
+				case '\n'.code: buf.add('\\n');
+				case '\r'.code: buf.add('\\r');
+				case '\t'.code: buf.add('\\t');
+				default:
+					if(c == null) continue;
+					if(isPrintable(c))
+						buf.addChar(c);
+					else {
+						if(c > 0xFF) {
+							buf.add("\\u{");
+							buf.add(hex(c, null));
+							buf.add("}");
+						} else {
+							buf.add("\\x");
+							buf.add(hex((c & 0xFF)));
+						}
+					}
+			}
+		}
+		return buf.toString();
+	}
+
 	function expr( e : Expr ) {
 		if( e == null ) {
 			add("??NULL??");
@@ -185,7 +229,10 @@ class Printer {
 			switch( c ) {
 			case CInt(i): add(i);
 			case CFloat(f): add(f);
-			case CString(s): add('"'); add(s.split('"').join('\\"').split("\n").join("\\n").split("\r").join("\\r").split("\t").join("\\t")); add('"');
+			case CString(s):
+				add('"');
+				add(getEscapedString(s));
+				add('"');
 			}
 		case EIdent(v):
 			add(v);
@@ -456,6 +503,7 @@ class Printer {
 			case ECustom(msg): msg;
 			case EInvalidClass(cla): "Invalid class: " + cla + " was not found.";
 			case EAlreadyExistingClass(cla): 'Custom Class named $cla already exists.';
+			case EInvalidEscape(s): "Invalid escape sequence: " + s;
 		};
 		#if hscriptPos
 		return e.origin + ":" + e.line + ": " + message;
