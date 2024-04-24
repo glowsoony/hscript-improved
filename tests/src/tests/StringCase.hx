@@ -58,6 +58,8 @@ class StringCase extends TestCase {
 		assertEq("s.charCodeAt(7)", s.charCodeAt(7));
 		assertEq("s.charCodeAt(-1)", s.charCodeAt(-1));
 
+		headerCode = '';
+
 		Util.runKnownBug("string.code doesnt work", () -> {
 			assertEq('"f".code', "f".code);
 			assertEq('"o".code', "o".code);

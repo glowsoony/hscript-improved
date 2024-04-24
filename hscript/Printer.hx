@@ -357,10 +357,13 @@ class Printer {
 			expr(e);
 		case ETry(e, v, t, ecatch):
 			add("try");
-			block(e);
-			add(" catch( " + v);
+			var wasBlock = block(e);
+			if( !wasBlock ) {
+				add("\n" + tabs);
+			} else add(" ");
+			add("catch( " + v);
 			addType(t);
-			add(")");
+			add(" )");
 			block(ecatch);
 		case EObject(fl):
 			if( fl.length == 0 ) {
