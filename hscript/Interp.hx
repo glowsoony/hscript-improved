@@ -594,12 +594,13 @@ class Interp {
 								UnsafeReflect.setField(enumThingy, c, en.createByName(c));
 							} catch(e) {
 								try {
-									UnsafeReflect.setField(enumThingy, c, UnsafeReflect.field(en, c));
+									UnsafeReflect.setField(enumThingy, c, Reflect.makeVarArgs((args:Array<Dynamic>) -> en.createByName(c, args)));
 								} catch(ex) {
 									throw e;
 								}
 							}
 						}
+						//var enumThingy = en;
 						variables.set(toSetName, enumThingy);
 					} else {
 						variables.set(toSetName, cl);
@@ -624,7 +625,7 @@ class Interp {
 				locals.set(n, {r: (e == null) ? null : expr(e), depth: depth});
 				if (depth == 0) {
 					if(isStatic == true) {
-						if(!staticVariables.exists(n)) {
+						if(!staticVariables.exists(n)) { // dont overwrite existing static variables
 							staticVariables.set(n, locals[n].r);
 						}
 						return null;
@@ -674,8 +675,8 @@ class Interp {
 				}
 			case ECall(e, params):
 				var args = new Array();
-				for (p in params)
-					args.push(expr(p));
+				for(i in 0...params.length)
+					args.push(expr(params[i]));
 
 				switch (Tools.expr(e)) {
 					case EField(e, f, s):
@@ -857,7 +858,7 @@ class Interp {
 					//	a.push(expr(e));
 					//}
 					//return a;
-					return [for (e in arr) expr(e)];
+					return [for (j in 0...arr.length) expr(arr[j])];
 				}
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
@@ -869,8 +870,8 @@ class Interp {
 				}
 			case ENew(cl, params):
 				var a = new Array();
-				for (e in params)
-					a.push(expr(e));
+				for (i in 0...params.length)
+					a.push(expr(params[i]));
 				return cnew(cl, a);
 			case EThrow(e):
 				throw expr(e);

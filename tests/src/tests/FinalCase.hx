@@ -44,6 +44,13 @@ class FinalCase extends TestCase {
 		');
 
 		Util.parse('sprite.setPosition(codesList.x + (sprite.ID % 2 == 1 ? 240 : 67),codesList.y + (15 * sprite.ID) + (sprite.ID%2 == 1 ? 35 : 54));');
+
+		headerCode = "import tests.FinalCase.TestEnum;";
+
+		assertEq("TestEnum.A", TestEnum.A);
+		assertEq("TestEnum.B", TestEnum.B);
+		assertEq("TestEnum.C(1, 2)", TestEnum.C(1, 2));
+		assertEq("TestEnum.D(1, 2, 3)", TestEnum.D(1, 2, 3));
 	}
 
 	function assertDisplay(script:String, expected:Dynamic) {
@@ -55,4 +62,11 @@ class FinalCase extends TestCase {
 	override function teardown() {
 		super.teardown();
 	}
+}
+
+enum TestEnum {
+	A;
+	B;
+	C(a:Int, b:Int);
+	D(a:Int, b:Int, c:Int);
 }
