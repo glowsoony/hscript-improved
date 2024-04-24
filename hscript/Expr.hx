@@ -54,7 +54,7 @@ enum Expr
 	EConst( c : Const );
 	EIdent( v : String );
 	EVar( n : String, ?t : CType, ?e : Expr, ?isPublic : Bool, ?isStatic : Bool );
-	EParent( e : Expr );
+	EParent( e : Expr, ?noOptimize : Bool );
 	EBlock( e : Array<Expr> );
 	EField( e : Expr, f : String , ?safe : Bool );
 	EBinop( op : String, e1 : Expr, e2 : Expr );

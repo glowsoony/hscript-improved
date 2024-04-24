@@ -128,6 +128,9 @@ class Util {
 		} catch (e:Dynamic) {
 			Sys.println("## Error parsing: " + str);
 			Sys.println("## Error: " + e);
+			// Print stack trace
+			var stack = haxe.CallStack.toString(haxe.CallStack.exceptionStack());
+			Sys.println("## Stack trace: " + stack);
 		}
 		return result;
 	}

@@ -167,10 +167,9 @@ class Optimizer {
 			case EIdent(_) | EConst(_):
 				return s;
 
-			case EParent(e):
+			case EParent(e, noOptimize):
 				e = optimize(e);
-				//return mk(EParent(e), s);
-				return mk(Tools.expr(e), s);
+				return mk(noOptimize ? EParent(e) : Tools.expr(e), s);
 
 			case ECheckType(e, t):
 				e = optimize(e);
@@ -274,10 +273,8 @@ class Optimizer {
 
 				if(isConstant(e1) && isConstant(e2)) {
 					var optimized:Dynamic = optimizeOp(op, getConstant(e1), getConstant(e2));
-					if(optimized != null) {
-						var expr = convertConstant(optimized);
-						return mk(expr, s);
-					}
+					if(optimized != null)
+						return mk(convertConstant(optimized), s);
 				}
 
 				// Possible bugs here

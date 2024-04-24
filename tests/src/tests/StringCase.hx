@@ -107,20 +107,6 @@ class StringCase extends TestCase {
 		assertEqPrintable("' \\t\\n\\x0b\\x0c\\r0xa'", " \t\n\x0b\x0c\r0xa");
 		assertEqPrintable("' \\t\\n\\x0b\\x0c\\r1.6'", ' \t\n\x0b\x0c\r1.6');
 
-		assertEq('"$${5}"', "${5}");
-		assertEq('"$${5},$${({})}"', "${5},${({})}");
-		assertEq('"$${5},$${\\"Hello\\"}"', "${5},${\"Hello\"}");
-		assertEq('"$${5},$${\'Hello\'}"', "${5},${'Hello'}");
-
-		Util.runKnownBug("String interpolation doesnt work", () -> {
-			assertEq("'${5}'", '${5}');
-			assertEq("'${5},${({})}'", '${5},${({})}');
-			assertEq("'${5},${\"Hello\"}'", '${5},${"Hello"}');
-			assertEq("'${5},${'Hello'}'", '${5},${'Hello'}');
-			assertEq("'$${5}'", '$${5}');
-			assertEq("'$${({})}'", '$${({})}');
-		});
-
 		assertEqPrintable("'The \\x54\\141b\\tch\\141r\\141ct\\145r:\\n'", 'The \x54\141b\tch\141r\141ct\145r:\n');
 		assertEqPrintable("'\\t\\\"\\101scii\\\"\\n'", '\t\"\101scii\"\n');
 		assertEqPrintable("'\\tcontains\\n'", '\tcontains\n');
@@ -132,7 +118,38 @@ class StringCase extends TestCase {
 		assertEqPrintable("'regional indicators \\u{1F1FA}\\u{1F1F8}, and musical note \\u{1F3B5}.'", 'regional indicators \u{1F1FA}\u{1F1F8}, and musical note \u{1F3B5}.');
 		assertEqPrintable("'\\u{10FFFF}\\u{1F1FA}\\u{3042}\\u{3B1}\\u{F1}\\u{A}'", '\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}');
 
-		trace(hscript.Printer.getEscapedString("\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}"));
+		//trace(hscript.Printer.getEscapedString("\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}"));
+
+		assertEq('"\\""', "\"");
+		assertEq("'\\''", '\'');
+		assertEq("'\\\\'", '\\');
+		assertEq("'\\n'", '\n');
+		assertEq("'\\r'", '\r');
+		assertEq("'\\t'", '\t');
+		assertEq("'\\101'", '\101');
+		assertEq("'/'", '/');
+
+		assertEq('"$${5}"', "${5}");
+		assertEq('"$${5},$${({})}"', "${5},${({})}");
+		assertEq('"$${5},$${\\"Hello\\"}"', "${5},${\"Hello\"}");
+		assertEq('"$${5},$${\'Hello\'}"', "${5},${'Hello'}");
+		assertEq("'$${({})}'", '$${({})}');
+
+		assertEq("'${5},${({})}'", '${5},${({})}');
+		assertEq("'${5},${\"Hello\"}'", '${5},${"Hello"}');
+		assertEq("'${5},${'Hello'}'", '${5},${'Hello'}');
+		assertEq("'$${5}'", '$${5}');
+		assertEq("'${5}'", '${5}');
+		assertEq("'${'${6}world'}'", '${'${6}world'}');
+		var a = 5;
+		headerCode = 'var a = 5;';
+		assertEq("'$a'", '$a');
+		assertEq("'$$a'", '$$a');
+		assertEq("'$ '", '$ ');
+		assertEq("'$0'", '$0');
+		assertEq("'$a+5 Hello ${a+5}'", '$a+5 Hello ${a+5}');
+		//assertEq("'$a+5 Hello ${a+5}'", "" + a + "+5 Hello " + a + 5);
+		headerCode = '';
 	}
 
 	override function teardown() {
