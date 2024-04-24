@@ -23,7 +23,13 @@ package hscript;
 import hscript.Expr;
 
 #if hscriptPos
-typedef StoredToken = { min : Int, max : Int, t : Token }
+//typedef StoredToken = { min : Int, max : Int, t : Token }
+@:structInit
+class StoredToken {
+	public var min : Int;
+	public var max : Int;
+	public var t : Token;
+}
 #else
 typedef StoredToken = Token;
 #end
@@ -225,7 +231,7 @@ class Parser {
 		return null;
 	}
 
-	inline function realToken(tk, ?min:Int, ?max:Int) {
+	inline function realToken(tk:Token, ?min:Int, ?max:Int):StoredToken {
 		#if hscriptPos
 		return {
 			t : tk,
@@ -237,7 +243,7 @@ class Parser {
 		#end
 	}
 
-	inline function push(tk) {
+	inline function push(tk:Token) {
 		tokens.push( realToken(tk) ); // adds it to the beginning of the list
 		#if hscriptPos
 		tokenMin = oldTokenMin;
@@ -245,17 +251,17 @@ class Parser {
 		#end
 	}
 
-	inline function ensure(tk) {
+	inline function ensure(tk:Token) {
 		var t = token();
 		if( t != tk ) unexpected(t);
 	}
 
-	inline function ensureToken(tk) {
+	inline function ensureToken(tk:Token) {
 		var t = token();
 		if( !Type.enumEq(t,tk) ) unexpected(t);
 	}
 
-	function maybe(tk) {
+	function maybe(tk:Token) {
 		var t = token();
 		if( Type.enumEq(t, tk) )
 			return true;
@@ -271,14 +277,6 @@ class Parser {
 				unexpected(tk);
 				return null;
 		}
-	}
-
-	inline function expr(e:Expr) {
-		#if hscriptPos
-		return e.e;
-		#else
-		return e;
-		#end
 	}
 
 	inline function pmin(e:Expr) {
@@ -300,9 +298,7 @@ class Parser {
 	inline function mk(e,?pmin,?pmax) : Expr {
 		#if hscriptPos
 		if( e == null ) return null;
-		if( pmin == null ) pmin = tokenMin;
-		if( pmax == null ) pmax = tokenMax;
-		return new Expr(e, pmin, pmax, origin, line);
+		return new Expr(e, pmin != null ? pmin : tokenMin, pmax != null ? pmax : tokenMax, origin, line);
 		#else
 		return e;
 		#end
@@ -310,7 +306,7 @@ class Parser {
 
 	function isBlock(e) {
 		if( e == null ) return false;
-		return switch( expr(e) ) {
+		return switch( Tools.expr(e) ) {
 			case EBlock(_), EObject(_), ESwitch(_): true;
 			case EFunction(_,e,_,_,_,_): isBlock(e);
 			case EClass(_,e,_,_): true;
@@ -335,7 +331,7 @@ class Parser {
 
 		var tk = token();
 		// this is a hack to support var a,b,c; with a single EVar
-		while( tk == TComma && e != null && expr(e).match(EVar(_)) ) {
+		while( tk == TComma && e != null && Tools.expr(e).match(EVar(_)) ) {
 			e = parseStructure("var"); // next variable
 			exprs.push(e);
 			tk = token();
@@ -384,7 +380,7 @@ class Parser {
 		return parseExprNext(mk(EObject(fl),p1));
 	}
 
-	inline function getTk(t) {
+	inline function getTk(t:StoredToken) {
 		#if hscriptPos
 		return t.t;
 		#else
@@ -392,7 +388,7 @@ class Parser {
 		#end
 	}
 
-	function parseExprFromTokens(t) {
+	function parseExprFromTokens(t:TokenList) {
 		var oldPos = readPos;
 		var oldTokenMin = tokenMin;
 		var oldTokenMax = tokenMax;
@@ -500,14 +496,14 @@ class Parser {
 						case TPClose:
 							return parseExprNext(mk(ECheckType(e,t),p1,tokenMax));
 						case TComma:
-							switch( expr(e) ) {
+							switch( Tools.expr(e) ) {
 								case EIdent(v): return parseLambda([new Argument(v, t)], pmin(e));
 								default:
 							}
 						default:
 					}
 				case TComma:
-					switch( expr(e) ) {
+					switch( Tools.expr(e) ) {
 						case EIdent(v): return parseLambda([new Argument(v)], pmin(e));
 						default:
 					}
@@ -566,7 +562,7 @@ class Parser {
 				//disableOrOp = oldoo;
 				if( e == null )
 					return makeUnop(op,e);
-				switch( expr(e) ) {
+				switch( Tools.expr(e) ) {
 					case EConst(CInt(i)):
 						return mk(EConst(CInt(-i)), start, pmax(e));
 					case EConst(CFloat(f)):
@@ -592,7 +588,7 @@ class Parser {
 					tk = token();
 			}
 			if( a.length == 1 && a[0] != null ) // Checks if its a for comprehension
-				switch( expr(a[0]) ) {
+				switch( Tools.expr(a[0]) ) {
 					case EFor(_), EForKeyValue(_), EWhile(_), EDoWhile(_):
 						var tmp = "__a_" + (uid++);
 						var e = mk(EBlock([
@@ -658,7 +654,7 @@ class Parser {
 
 	function mapCompr( tmp : String, e : Expr ) {
 		if( e == null ) return null;
-		var edef = switch( expr(e) ) {
+		var edef = switch( Tools.expr(e) ) {
 			case EFor(v, it, e2):
 				EFor(v, it, mapCompr(tmp, e2));
 			case EForKeyValue(v, it, e2, ithv):
@@ -682,7 +678,7 @@ class Parser {
 	function makeUnop( op, e ) {
 		if( e == null && resumeErrors )
 			return null;
-		return switch( expr(e) ) {
+		return switch( Tools.expr(e) ) {
 			case EBinop(bop, e1, e2): mk(EBinop(bop, makeUnop(op, e1), e2), pmin(e1), pmax(e2));
 			case ETernary(e1, e2, e3): mk(ETernary(makeUnop(op, e1), e2, e3), pmin(e1), pmax(e3));
 			default: mk(EUnop(op,true,e),pmin(e),pmax(e));
@@ -695,7 +691,7 @@ class Parser {
 			error(EInvalidOp(op),pmin(e1),pmax(e1));
 		if( e == null && resumeErrors )
 			return mk(EBinop(op,e1,e),pmin(e1),pmax(e1));
-		return switch( expr(e) ) {
+		return switch( Tools.expr(e) ) {
 			case EBinop(op2,e2,e3):
 				if( opPriority.get(op) <= opPriority.get(op2) && !opRightAssoc.exists(op) )
 					mk(EBinop(op2,makeBinop(op,e1,e2),e3),pmin(e1),pmax(e3));
@@ -1162,11 +1158,11 @@ class Parser {
 
 				if( op == "->" ) {
 					// single arg reinterpretation of `f -> e` , `(f) -> e` and `(f:T) -> e`
-					switch( expr(e1) ) {
-						case EIdent(i), EParent(expr(_) => EIdent(i)):
+					switch( Tools.expr(e1) ) {
+						case EIdent(i), EParent(Tools.expr(_) => EIdent(i)):
 							var eret = parseExpr();
 							return mk(EFunction([new Argument(i)], mk(EReturn(eret),pmin(eret))), pmin(e1));
-						case ECheckType(expr(_) => EIdent(i), t):
+						case ECheckType(Tools.expr(_) => EIdent(i), t):
 							var eret = parseExpr();
 							return mk(EFunction([new Argument(i, t)], mk(EReturn(eret),pmin(eret))), pmin(e1));
 						default:
@@ -1180,7 +1176,7 @@ class Parser {
 				}
 
 				if( opPriority.get(op) == -1 ) {
-					if( isBlock(e1) || switch(expr(e1)) { case EParent(_): true; default: false; } ) {
+					if( isBlock(e1) || switch(Tools.expr(e1)) { case EParent(_): true; default: false; } ) { // TODO: clean QQQ
 						push(tk);
 						return e1;
 					}
@@ -2242,15 +2238,15 @@ class Parser {
 	}
 
 	function evalPreproCond( e : Expr ) {
-		switch( expr(e) ) {
+		switch( Tools.expr(e) ) {
 		case EIdent(id):
 			return preprocValue(id) != null;
 		case EField(e2, f):
-			switch(expr(e2)) {
+			switch(Tools.expr(e2)) {
 				case EIdent(id):
 					return preprocValue(id + "." + f) != null;
 				default:
-					error(EInvalidPreprocessor("Can't eval " + expr(e).getName() + " with " + expr(e2).getName()), readPos, readPos);
+					error(EInvalidPreprocessor("Can't eval " + Tools.expr(e).getName() + " with " + Tools.expr(e2).getName()), readPos, readPos);
 					return false;
 			}
 		case EUnop("!", _, e):
@@ -2262,7 +2258,7 @@ class Parser {
 		case EBinop("||", e1, e2):
 			return evalPreproCond(e1) || evalPreproCond(e2);
 		default:
-			error(EInvalidPreprocessor("Can't eval " + expr(e).getName()), readPos, readPos);
+			error(EInvalidPreprocessor("Can't eval " + Tools.expr(e).getName()), readPos, readPos);
 			return false;
 		}
 	}
