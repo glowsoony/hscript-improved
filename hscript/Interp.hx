@@ -499,7 +499,6 @@ class Interp {
 		if (l != null)
 			return l.r;
 
-		var v = variables.get(id);
 		for(map in [variables, publicVariables, staticVariables, customClasses])
 			if (map.exists(id))
 				return map[id];
@@ -520,7 +519,8 @@ class Interp {
 		}
 		if (doException)
 			error(EUnknownVariable(id));
-		return v;
+		//var v = variables.get(id);
+		return null;
 	}
 
 	public function expr(e:Expr):Dynamic {
