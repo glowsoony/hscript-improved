@@ -107,6 +107,14 @@ class Tools {
 		#end
 	}
 
+	public static inline function cleanError( e : Error ) {
+		#if hscriptPos
+		return e.e;
+		#else
+		return e;
+		#end
+	}
+
 	public static inline function mk( e : ExprDef, p : Expr ):Expr {
 		#if hscriptPos
 		return new Expr(e, p.pmin, p.pmax, p.origin, p.line);

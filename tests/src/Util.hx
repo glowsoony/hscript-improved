@@ -1,4 +1,4 @@
-import hscript.Expr.Error;
+import hscript.Error;
 import hscript.Printer;
 import haxe.Constraints.IMap;
 import haxe.EnumTools.EnumValueTools;
@@ -97,85 +97,65 @@ class Util {
 		return true;
 	}
 
+	public static inline function passed() {
+		passedTestUnits++;
+		return true;
+	}
+
+	public static inline function failed() {
+		failedTestUnits++;
+		return false;
+	}
+
 
 	public static function assert(value:Bool, message:String, ?pos:haxe.PosInfos) {
 		if (value) {
-			passedTestUnits++;
-			return true;
+			return passed();
 		} else {
 			Sys.println("Assertion failed: " + message);
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
-			failedTestUnits++;
-			return false;
+			return failed();
 		}
 	}
 
 	public static function assertEq(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
 		var equals = deepEqual(value, expected);
-		var passed = equals;
-		//if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
-		//	if (deepCompareArrays(value, expected))
-		//		passed = true;
-		//}
-		//else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
-		//	if(Type.enumEq(value, expected))
-		//		passed = true;
-		//}
+		var _passed = equals;
 
-		if (passed) {
-			passedTestUnits++;
-			return true;
+		if (_passed) {
+			return passed();
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
-			failedTestUnits++;
-			return false;
+			return failed();
 		}
 	}
 
 	public static function assertEqPrintable(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
-		//var passed = value == expected;
-		//if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
-		//	if (deepCompareArrays(value, expected))
-		//		passed = true;
-		//}
-		//else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
-		//	if(Type.enumEq(value, expected))
-		//		passed = true;
-		//}
 		var equals = deepEqual(value, expected);
-		var passed = equals;
+		var _passed = equals;
 
-		if (passed) {
-			passedTestUnits++;
-			return true;
+		if (_passed) {
+			return passed();
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + Printer.getEscapedString(expected) + " Got: " + Printer.getEscapedString(value));
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
-			failedTestUnits++;
-			return false;
+			return failed();
 		}
 	}
 
 	public static function assertNeq(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
-		//var passed = value != expected;
-		//if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
-		//	if (!deepCompareArrays(value, expected))
-		//		passed = true;
-		//}
 		var equals = deepEqual(value, expected);
-		var passed = !equals;
+		var _passed = !equals;
 
 		// WARNING THIS MIGHT NOT WORK
 
-		if (passed) {
-			passedTestUnits++;
-			return true;
+		if (_passed) {
+			return passed();
 		} else {
 			Sys.println("Assertion failed: " + message + " Expected: " + expected + " Got: " + value);
 			Sys.println("> At " + pos.fileName + ":" + pos.lineNumber);
-			failedTestUnits++;
-			return false;
+			return failed();
 		}
 	}
 
@@ -232,6 +212,17 @@ class Util {
 			Sys.println("## Stack trace: " + stack);
 		}
 		return result;
+	}
+
+	/**
+	 * Parses a string without checking for errors
+	 */
+	public static function parseUnsafe(str:String) {
+		var p = new Parser();
+		p.allowTypes = true;
+		p.allowMetadata = true;
+		p.allowJSON = true;
+		return p.parseString(str);
 	}
 
 	public static function getInterp() {

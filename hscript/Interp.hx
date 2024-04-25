@@ -158,6 +158,11 @@ class Interp {
 		variables.set("null", null);
 		variables.set("true", true);
 		variables.set("false", false);
+		#if !NO_FROM_CHAR_CODE_FIX
+		variables.set("__StringWorkaround__fromCharCode", function(a:Int) { // TODO: make hscript only add this if its used
+			return String.fromCharCode(a);
+		});
+		#end
 		variables.set("trace", Reflect.makeVarArgs(function(el) {
 			var inf = posInfos();
 			var v = el.shift();
@@ -472,7 +477,7 @@ class Interp {
 		}
 	}
 
-	public inline function error(e:#if hscriptPos ErrorDef #else Error #end, rethrow = false):Dynamic {
+	public inline function error(e:#if hscriptPos Error.ErrorDef #else Error #end, rethrow = false):Dynamic {
 		#if hscriptPos var e = new Error(e, curExpr.pmin, curExpr.pmax, curExpr.origin, curExpr.line); #end
 
 		if (rethrow) {

@@ -51,4 +51,24 @@ class HScriptRunner {
 		else
 			return interp.exprReturn(lastExpr);
 	}
+
+	public function executeUnsafe(script:String):Dynamic {
+		var interp = clearPrevious ? getNewInterp() : this.interp;
+		lastExpr = Util.parseUnsafe(headerCode + script + tailCode);
+		if (clearPrevious)
+			return interp.execute(lastExpr);
+		else
+			return interp.exprReturn(lastExpr);
+	}
+
+	public function executeWithVarsUnsafe(script:String, vars:Dynamic):Dynamic {
+		var interp = clearPrevious ? getNewInterp() : this.interp;
+		lastExpr = Util.parseUnsafe(headerCode + script + tailCode);
+		for(v in Reflect.fields(vars))
+			interp.variables.set(v, Reflect.field(vars, v));
+		if (clearPrevious)
+			return interp.execute(lastExpr);
+		else
+			return interp.exprReturn(lastExpr);
+	}
 }

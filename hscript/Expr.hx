@@ -139,44 +139,6 @@ enum CType {
 	CTNamed( n : String, t : CType );
 }
 
-#if hscriptPos
-class Error {
-	public var e : ErrorDef;
-	public var pmin : Int;
-	public var pmax : Int;
-	public var origin : String;
-	public var line : Int;
-	public function new(e, pmin, pmax, origin, line) {
-		this.e = e;
-		this.pmin = pmin;
-		this.pmax = pmax;
-		this.origin = origin;
-		this.line = line;
-	}
-	public function toString(): String {
-		return Printer.errorToString(this);
-	}
-}
-enum ErrorDef
-#else
-enum Error
-#end
-{
-	EInvalidChar( c : Int );
-	EUnexpected( s : String );
-	EUnterminatedString;
-	EUnterminatedComment;
-	EInvalidPreprocessor( msg : String );
-	EUnknownVariable( v : String );
-	EInvalidIterator( v : String );
-	EInvalidOp( op : String );
-	EInvalidAccess( f : String );
-	ECustom( msg : String );
-	EInvalidClass( className : String);
-	EAlreadyExistingClass( className : String);
-	EInvalidEscape( s : String );
-}
-
 enum ModuleDecl {
 	DPackage( path : Array<String> );
 	DImport( path : Array<String>, ?everything : Bool );

@@ -513,12 +513,16 @@ class Printer {
 		}
 	}
 
-	public static function toString( e : Expr ) {
+	public inline static function toString( e : Expr ) {
 		return new Printer().exprToString(e);
 	}
 
-	public static function errorToString( e : Expr.Error ) {
-		var message = switch( #if hscriptPos e.e #else e #end ) {
+	public inline static function compareErrors( e1 : Error, e2 : Error ) {
+		return Type.enumEq(Tools.cleanError(e1), Tools.cleanError(e2));
+	}
+
+	public static function errorToString( e : Error ) {
+		var message = switch( Tools.cleanError(e) ) {
 			case EInvalidChar(c): "Invalid character: '"+(StringTools.isEof(c) ? "EOF (End Of File)" : String.fromCharCode(c))+"' ("+c+")";
 			case EUnexpected(s): "Unexpected token: \""+s+"\"";
 			case EUnterminatedString: "Unterminated string";
@@ -529,6 +533,7 @@ class Printer {
 			case EInvalidOp(op): "Invalid operator: "+op;
 			case EInvalidAccess(f): "Invalid access to field " + f;
 			case ECustom(msg): msg;
+			case EPreset(msg): msg;
 			case EInvalidClass(cla): "Invalid class: " + cla + " was not found.";
 			case EAlreadyExistingClass(cla): 'Custom Class named $cla already exists.';
 			case EInvalidEscape(s): "Invalid escape sequence: " + s;

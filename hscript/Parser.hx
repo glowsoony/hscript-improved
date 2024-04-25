@@ -163,6 +163,14 @@ class Parser {
 			opPriority.set(x, x == "++" || x == "--" ? -1 : -2);
 	}
 
+	public static inline function getBaseError( err ):Error {
+		#if hscriptPos
+		return new Error(err, 0, 0, "", 0);
+		#else
+		return err;
+		#end
+	}
+
 	public inline function error( err, pmin, pmax ) {
 		if( !resumeErrors )
 		#if hscriptPos
@@ -215,6 +223,7 @@ class Parser {
 			parseFullExpr(a);
 		}
 		var expr = if( a.length == 1 ) a[0] else mk(EBlock(a),0);
+		expr = Preprocessor.process(expr);
 		if(Parser.optimize) {
 			expr = Optimizer.optimize(expr);
 			var printer = new Printer();
@@ -1879,6 +1888,9 @@ class Parser {
 				arr.add(realToken(TPClose));
 				interpString.push(arr);
 				interpolation = false;
+
+				if(arr.length == 2) // If its just ()
+					error(EPreset(EMPTY_INTERPOLATION), p1, p1);
 
 				if( StringTools.isEof(peekChar()) )
 					break;
