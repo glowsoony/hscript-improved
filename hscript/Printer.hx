@@ -238,7 +238,22 @@ class Printer {
 			add(v);
 		case EVar(n, t, e): // TODO: static, public, override
 			add("var " + n);
-			addType(t);
+			if( t != null )
+				addType(t);
+			else
+				switch( Tools.expr(e) ) {
+					case EMapDecl(type, _, _):
+						add(" : Map<");
+						switch( type ) {
+							case ObjectMap: add("Dynamic");
+							case StringMap: add("String");
+							case EnumMap: add("EnumValue");
+							case IntMap: add("Int");
+							case UnknownMap: add("?");
+						}
+						add(", Dynamic>");
+					default:
+				}
 			if( e != null ) {
 				add(" = ");
 				expr(e);
@@ -286,7 +301,10 @@ class Printer {
 			} else {
 				expr(e1);
 			}
-			add(" " + op + " ");
+			if(op == "...")
+				add(op);
+			else
+				add(" " + op + " ");
 			if(paran == 1 || paran == 2) {
 				add("(");
 				expr(e2);
@@ -383,7 +401,17 @@ class Printer {
 			add("[");
 			expr(index);
 			add("]");
-		case EArrayDecl(el, _):
+		case EMapDecl(type, keys, values):
+			add("[");
+			var first = true;
+			for( i in 0...keys.length ) {
+				if( first ) first = false else add(", ");
+				expr(keys[i]);
+				add(" => ");
+				expr(values[i]);
+			}
+			add("]");
+		case EArrayDecl(el):
 			add("[");
 			var first = true;
 			for( e in el ) {

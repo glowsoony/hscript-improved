@@ -1,9 +1,101 @@
 import hscript.Expr.Error;
 import hscript.Printer;
+import haxe.Constraints.IMap;
 
 using StringTools;
 
 class Util {
+	// TODO: check this for bugs
+	static function deepEqual(a:Dynamic, b:Dynamic):Bool {
+		if (a == b) {
+			return true;
+		}
+
+		if (a == null || b == null) {
+			return false;
+		}
+
+		if ((a is Array) && (b is Array)) {
+			var aArray:Array<Dynamic> = cast a;
+			var bArray:Array<Dynamic> = cast b;
+
+			if (aArray.length != bArray.length) {
+				return false;
+			}
+
+			for (i in 0...aArray.length) {
+				if (!deepEqual(aArray[i], bArray[i])) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		if(Std.isOfType(a, Enum) && Std.isOfType(b, Enum)) {
+			if(Type.enumEq(a, b))
+				return true;
+		}
+
+		// Check Map Equality
+		if (Std.isOfType(a, IMap) && Std.isOfType(b, IMap)) {
+			var aMap:IMap<Dynamic, Dynamic> = cast a;
+			var bMap:IMap<Dynamic, Dynamic> = cast b;
+
+			var aFields = [for(v in aMap.keys()) v];
+			var bFields = [for(v in bMap.keys()) v];
+
+			if (aFields.length != bFields.length) {
+				return false;
+			}
+
+			// Sort fields to ensure consistent comparison
+			aFields.sort(Reflect.compare);
+			bFields.sort(Reflect.compare);
+
+			for (key in aMap.keys()) {
+				if (!bMap.exists(key) || !deepEqual(aMap.get(key), bMap.get(key))) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		if (Reflect.isObject(a) && Reflect.isObject(b)) {
+			var aFields = Reflect.fields(a);
+			var bFields = Reflect.fields(b);
+
+			if (aFields.length != bFields.length) {
+				return false;
+			}
+
+			// Sort fields to ensure consistent comparison
+			aFields.sort(Reflect.compare);
+			bFields.sort(Reflect.compare);
+
+			for (i in 0...aFields.length) {
+				var field = aFields[i];
+				if (field != bFields[i] || !deepEqual(Reflect.field(a, field), Reflect.field(b, field))) {
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		if(!Type.enumEq(Type.typeof(a), Type.typeof(b))) {
+			if(Type.typeof(a) == TInt && Type.typeof(b) == TFloat) {
+				return cast(a, Int) == cast(b, Float);
+			}
+			if(Type.typeof(a) == TFloat && Type.typeof(b) == TInt) {
+				return cast(a, Float) == cast(b, Int);
+			}
+		}
+
+		return false;
+	}
+
+
 	public static function assert(value:Bool, message:String, ?pos:haxe.PosInfos) {
 		if (value) {
 			passedTestUnits++;
@@ -17,15 +109,16 @@ class Util {
 	}
 
 	public static function assertEq(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
-		var passed = value == expected;
-		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
-			if (deepCompareArrays(value, expected))
-				passed = true;
-		}
-		else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
-			if(Type.enumEq(value, expected))
-				passed = true;
-		}
+		var equals = deepEqual(value, expected);
+		var passed = equals;
+		//if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
+		//	if (deepCompareArrays(value, expected))
+		//		passed = true;
+		//}
+		//else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
+		//	if(Type.enumEq(value, expected))
+		//		passed = true;
+		//}
 
 		if (passed) {
 			passedTestUnits++;
@@ -39,15 +132,17 @@ class Util {
 	}
 
 	public static function assertEqPrintable(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
-		var passed = value == expected;
-		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
-			if (deepCompareArrays(value, expected))
-				passed = true;
-		}
-		else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
-			if(Type.enumEq(value, expected))
-				passed = true;
-		}
+		//var passed = value == expected;
+		//if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
+		//	if (deepCompareArrays(value, expected))
+		//		passed = true;
+		//}
+		//else if (Std.isOfType(value, Enum) && Std.isOfType(expected, Enum)) {
+		//	if(Type.enumEq(value, expected))
+		//		passed = true;
+		//}
+		var equals = deepEqual(value, expected);
+		var passed = equals;
 
 		if (passed) {
 			passedTestUnits++;
@@ -61,11 +156,13 @@ class Util {
 	}
 
 	public static function assertNeq(value:Dynamic, expected:Dynamic, message:String, ?pos:haxe.PosInfos) {
-		var passed = value != expected;
-		if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
-			if (!deepCompareArrays(value, expected))
-				passed = true;
-		}
+		//var passed = value != expected;
+		//if (Std.isOfType(value, Array) && Std.isOfType(expected, Array)) {
+		//	if (!deepCompareArrays(value, expected))
+		//		passed = true;
+		//}
+		var equals = deepEqual(value, expected);
+		var passed = !equals;
 
 		// WARNING THIS MIGHT NOT WORK
 

@@ -45,6 +45,7 @@ class Tools {
 		case EFunction(_, e, _, _): f(e);
 		case EReturn(e): if( e != null ) f(e);
 		case EArray(e, i): f(e); f(i);
+		case EMapDecl(type, keys, values): for( e in keys ) f(e); for( e in values ) f(e);
 		case EArrayDecl(el): for( e in el ) f(e);
 		case ENew(_,el): for( e in el ) f(e);
 		case EThrow(e): f(e);
@@ -82,6 +83,7 @@ class Tools {
 		case EFunction(args, e, name, t): EFunction(args, f(e), name, t);
 		case EReturn(e): EReturn(if( e != null ) f(e) else null);
 		case EArray(e, i): EArray(f(e),f(i));
+		case EMapDecl(type, keys, values): EMapDecl(type, [for( e in keys ) f(e)], [for( e in values ) f(e)]);
 		case EArrayDecl(el): EArrayDecl([for( e in el ) f(e)]);
 		case ENew(cl,el): ENew(cl,[for( e in el ) f(e)]);
 		case EThrow(e): EThrow(f(e));

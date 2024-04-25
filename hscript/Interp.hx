@@ -789,77 +789,54 @@ class Interp {
 					}
 				}
 				return f;
-			case EArrayDecl(arr, wantedType):
-				var isTypeMap = wantedType != null;
-				var isMap = if(isTypeMap) {
-					wantedType.match(CTPath(["Map"], [_, _]));
-				} else {
-					arr.length > 0 && Tools.expr(arr[0]).match(EBinop("=>", _));
-				}
-				if (isMap) {
-					var isAllString:Bool = true;
-					var isAllInt:Bool = true;
-					var isAllObject:Bool = true;
-					var isAllEnum:Bool = true;
-					var keys:Array<Dynamic> = [];
-					var values:Array<Dynamic> = [];
-					for (e in arr) {
-						switch (Tools.expr(e)) {
-							case EBinop("=>", eKey, eValue): {
-								var key:Dynamic = expr(eKey);
-								var value:Dynamic = expr(eValue);
-								if(isAllString)
-									isAllString = (key is String);
-								if(isAllInt)
-									isAllInt = (key is Int);
-								if(isAllObject)
-									isAllObject = Reflect.isObject(key);
-								if(isAllEnum)
-									isAllEnum = Reflect.isEnumValue(key);
-								keys.push(key);
-								values.push(value);
-							}
-							default: throw("=> expected");
-						}
+			case EMapDecl(type, _keys, _values):
+				var keys:Array<Dynamic> = [];
+				var values:Array<Dynamic> = [];
+				if(type == UnknownMap) {
+					var isKeyString:Bool = false;
+					var isKeyInt:Bool = false;
+					var isKeyObject:Bool = false;
+					var isKeyEnum:Bool = false;
+					for (i in 0..._keys.length) {
+						var key:Dynamic = expr(_keys[i]);
+						var value:Dynamic = expr(_values[i]);
+
+						if(!isKeyString) isKeyString = (key is String);
+						if(!isKeyInt) isKeyInt = (key is Int);
+						if(!isKeyObject) isKeyObject = Reflect.isObject(key);
+						if(!isKeyEnum) isKeyEnum = Reflect.isEnumValue(key);
+
+						keys.push(key);
+						values.push(value);
 					}
 
-					if(isTypeMap) {
-						isAllString = wantedType.match(CTPath(["Map"], [CTPath(["String"], _), _]));
-						isAllInt = wantedType.match(CTPath(["Map"], [CTPath(["Int"], _), _]));
-						if(isAllString || isAllInt) {
-							isAllObject = false;
-							isAllEnum = false;
-						} else {
-							if(!isAllObject && !isAllEnum) {
-								throw("Unknown Type Key");
-							}
-						}
-					}
+					var t = b2i(isKeyString) + b2i(isKeyInt) + b2i(isKeyObject) + b2i(isKeyEnum);
 
-					var map:IMap<Dynamic, Dynamic> = {
-						if (isAllInt)
-							new haxe.ds.IntMap<Dynamic>();
-						else if (isAllString)
-							new haxe.ds.StringMap<Dynamic>();
-						else if (isAllEnum)
-							new haxe.ds.EnumValueMap<Dynamic, Dynamic>();
-						else if (isAllObject)
-							new haxe.ds.ObjectMap<Dynamic, Dynamic>();
-						else
-							throw 'Inconsistent key types';
-					}
-					for (n in 0...keys.length) {
-						map.set(keys[n], values[n]);
-					}
-					return map;
+					if(t != 1)
+						error(ECustom("Unknown Map Type"));
+					else if(isKeyInt) type = IntMap;
+					else if(isKeyString) type = StringMap;
+					else if(isKeyEnum) type = EnumMap;
+					else if(isKeyObject) type = ObjectMap;
 				} else {
-					//var a = new Array();
-					//for (e in arr) {
-					//	a.push(expr(e));
-					//}
-					//return a;
-					return [for (j in 0...arr.length) expr(arr[j])];
+					for(i in 0..._keys.length) {
+						keys.push(expr(_keys[i]));
+						values.push(expr(_values[i]));
+					}
 				}
+				var map:IMap<Dynamic, Dynamic> = switch(type) {
+					case IntMap: new haxe.ds.IntMap<Dynamic>();
+					case StringMap: new haxe.ds.StringMap<Dynamic>();
+					case EnumMap: new haxe.ds.EnumValueMap<Dynamic, Dynamic>();
+					case ObjectMap: new haxe.ds.ObjectMap<Dynamic, Dynamic>();
+					default: null;
+				}
+				for (n in 0...keys.length) {
+					map.set(keys[n], values[n]);
+				}
+				return map;
+			case EArrayDecl(arr):
+				return [for (j in 0...arr.length) expr(arr[j])];
 			case EArray(e, index):
 				var arr:Dynamic = expr(e);
 				var index:Dynamic = expr(index);
@@ -1163,4 +1140,6 @@ class Interp {
 			c = Type.resolveClass(cl);
 		return (c is IHScriptCustomConstructor) ? cast(c, IHScriptCustomConstructor).hnew(args) : Type.createInstance(c, args);
 	}
+
+	static inline function b2i(b:Bool) return b ? 1 : 0;
 }

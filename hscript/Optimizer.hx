@@ -20,6 +20,7 @@ class Optimizer {
 		// TODO: Remove Std.string if its the right side of a binop of a string
 		// TODO: Add EForComprehension, EWhileComprehension, EDoWhileComprehension for better optimization
 		// TODO: Optimize EFor(v, it, EBlock([e1])) to EFor(v, it, e1)
+		// TODO: Optimize EIf(cond, e1, e2) to EBlock([cond, e1]) if e1 == e2, if cond is constant or side effect free then convert to EParent(e1)
 
 		switch(e) {
 			// Parse all expressions and recreate the AST
@@ -247,22 +248,40 @@ class Optimizer {
 
 				return mk(ESwitch(e, cases, def), s);
 
-			case EArrayDecl(arr, wantedType):
+			case EMapDecl(type, keys, values):
+				keys = keys.map((v) -> optimize(v));
+				values = values.map((v) -> optimize(v));
+				return mk(EMapDecl(type, keys, values), s);
+
+			case EArrayDecl(arr):
 				arr = arr.map((v) -> optimize(v));
-				return mk(EArrayDecl(arr, wantedType), s);
+				return mk(EArrayDecl(arr), s);
 
 			case EArray(e, index):
 				e = optimize(e);
 				index = optimize(index);
-				if(isConstant(index) && Tools.expr(e).match(EArrayDecl(_, _))) {
-					var arr = switch(Tools.expr(e)) {
-						case EArrayDecl(arr, _): arr;
-						default: null;
-					};
+				if(isConstant(index)) {
+					if(Tools.expr(e).match(EArrayDecl(_))) {
+						var arr = switch(Tools.expr(e)) {
+							case EArrayDecl(arr): arr;
+							default: null;
+						};
 
-					var constant = Lambda.exists(arr, isConstant);
-					if(constant) {
-						return mk(Tools.expr(arr[getConstant(index)]), s);
+						var constant = Lambda.exists(arr, isConstant);
+						if(constant) {
+							return mk(Tools.expr(arr[getConstant(index)]), s);
+						}
+					}
+					if(Tools.expr(e).match(EMapDecl(_))) {
+						var map = switch(Tools.expr(e)) {
+							case EMapDecl(type, keys, vals): [keys, vals];
+							default: null;
+						};
+
+						var constant = Lambda.exists(map, (v) -> isConstant(v[0]) && isConstant(v[1]));
+						if(constant) {
+							return mk(Tools.expr(map[getConstant(index)][1]), s);
+						}
 					}
 				}
 				return mk(EArray(e, index), s);

@@ -115,8 +115,6 @@ class Parser {
 	var startIdents : Array<Bool>;
 	var uid : Int = 0;
 
-	var disableOrOp : Bool = false;
-
 	#if hscriptPos
 	var origin : String;
 	var tokenMin : Int;
@@ -481,10 +479,7 @@ class Parser {
 				return mk(EFunction([], mk(EReturn(eret),p1)), p1);
 			}
 			push(tk);
-			//var oldoo = disableOrOp;
-			//disableOrOp = false;
 			var e = parseExpr();
-			//disableOrOp = oldoo;
 			tk = token();
 			switch( tk ) {
 				case TPClose:
@@ -556,10 +551,7 @@ class Parser {
 		case TOp(op):
 			if( op == "-" ) {
 				var start = tokenMin;
-				//var oldoo = disableOrOp;
-				//disableOrOp = false;
 				var e = parseExpr();
-				//disableOrOp = oldoo;
 				if( e == null )
 					return makeUnop(op,e);
 				switch( Tools.expr(e) ) {
@@ -579,27 +571,104 @@ class Parser {
 			tk = token();
 			while( tk != TBkClose && (!resumeErrors || tk != TEof) ) {
 				push(tk);
-				//var oldoo = disableOrOp;
-				//disableOrOp = false;
 				a.push(parseExpr());
-				//disableOrOp = oldoo;
 				tk = token();
 				if( tk == TComma )
 					tk = token();
 			}
-			if( a.length == 1 && a[0] != null ) // Checks if its a for comprehension
+			if( a.length == 1 && a[0] != null ) {// Checks if its a for comprehension
 				switch( Tools.expr(a[0]) ) {
-					case EFor(_), EForKeyValue(_), EWhile(_), EDoWhile(_):
+					case EFor(_, _, e), EForKeyValue(_, _, e, _), EWhile(_, e), EDoWhile(_, e):
+						var e = Tools.expr(e);
+
+						if(isMapCompr(a[0])) {
+							var tmp = "__m_" + (uid++);
+							var tmp2 = "__m_" + (uid++);
+							var e = mk(EBlock([
+								// TODO: Make it detect simple map comprehensions so we can optimize the map type
+								mk(EVar(tmp, null, mk(EMapDecl(ObjectMap, [], []), p1)), p1), // Assume ObjectMap, since it supports dynamic keys
+								mk(EVar(tmp2, null, mk(EField(mk(EIdent(tmp), p1), "set"), p1)), p1),
+								mapMapCompr(tmp2, a[0]),
+								mk(EIdent(tmp),p1),
+							]),p1);
+							return parseExprNext(e);
+						}
+
 						var tmp = "__a_" + (uid++);
+						var tmp2 = "__a_" + (uid++);
 						var e = mk(EBlock([
 							mk(EVar(tmp, null, mk(EArrayDecl([]), p1)), p1),
-							mapCompr(tmp, a[0]),
+							mk(EVar(tmp2, null, mk(EField(mk(EIdent(tmp), p1), "push"), p1)), p1),
+							mapArrCompr(tmp2, a[0]),
 							mk(EIdent(tmp),p1),
 						]),p1);
 						return parseExprNext(e);
 					default:
 				}
-			return parseExprNext(mk(EArrayDecl(a, nextType), p1));
+			}
+
+			var isTypeMap = (nextType != null) && nextType.match(CTPath(["Map"], [_, _]));
+			var isMap = isTypeMap;
+			if(!isMap) {
+				isMap = Lambda.exists(a, (e) -> Tools.expr(e).match(EBinop("=>", _))); // Check if any element is a => b
+			}
+			if(isMap) {
+				// TODO: clean up this code more
+				var isKeyString:Bool = false;
+				var isKeyInt:Bool = false;
+				var isKeyObject:Bool = false;
+				var isKeyEnum:Bool = false;
+				var keys:Array<Expr> = [];
+				var values:Array<Expr> = [];
+				for (e in a) {
+					switch (Tools.expr(e)) {
+						case EBinop("=>", eKey, eValue): {
+							switch(Tools.expr(eKey)) {
+								case EConst(CInt(_)):// | EConst(CFloat(_)):
+									isKeyInt = true;
+								case EConst(CString(_)):
+									isKeyString = true;
+								case EIdent(_):
+									isKeyObject = true;
+								// TODO: add more stuffs for isKeyObject
+								default:
+							}
+							keys.push(eKey);
+							values.push(eValue);
+						}
+						default:
+							error(ECustom("Expected a => b"), p1, p1);
+					}
+				}
+
+				if(isTypeMap) {
+					isKeyString = nextType.match(CTPath(["Map"], [CTPath(["String"], _), _]));
+					isKeyInt = nextType.match(CTPath(["Map"], [CTPath(["Int"], _), _]));
+					if(isKeyString || isKeyInt) {
+						isKeyObject = false;
+						isKeyEnum = false;
+					} else {
+						if(!isKeyObject && !isKeyEnum) {
+							error(ECustom("Unknown Type Key"), p1, p1);
+						}
+					}
+				}
+
+				var t = b2i(isKeyString) + b2i(isKeyInt) + b2i(isKeyObject) + b2i(isKeyEnum);
+
+				var type:MapType = null;
+				if(t != 1) type = UnknownMap;
+				else if(isKeyInt) type = IntMap;
+				else if(isKeyString) type = StringMap;
+				else if(isKeyEnum) type = EnumMap;
+				else if(isKeyObject) type = ObjectMap;
+
+				if(type == null)
+					error(ECustom("Unknown Map Type"), p1, p1);
+
+				return parseExprNext(mk(EMapDecl(type, keys, values), p1));
+			}
+			return parseExprNext(mk(EArrayDecl(a), p1));
 		case TMeta(id) if( allowMetadata ):
 			var args = parseMetaArgs();
 			return mk(EMeta(id, args, parseExpr()),p1);
@@ -607,6 +676,8 @@ class Parser {
 			return unexpected(tk);
 		}
 	}
+
+	static inline function b2i(b:Bool) return b ? 1 : 0;
 
 	function parseLambda( args : Array<Argument>, pmin ) {
 		while( true ) {
@@ -652,27 +723,90 @@ class Parser {
 		return args;
 	}
 
-	function mapCompr( tmp : String, e : Expr ) {
+	function mapArrCompr( tmp : String, e : Expr ) {
 		if( e == null ) return null;
 		var edef = switch( Tools.expr(e) ) {
 			case EFor(v, it, e2):
-				EFor(v, it, mapCompr(tmp, e2));
+				EFor(v, it, mapArrCompr(tmp, e2));
 			case EForKeyValue(v, it, e2, ithv):
-				EForKeyValue(v, it, mapCompr(tmp, e2), ithv);
+				EForKeyValue(v, it, mapArrCompr(tmp, e2), ithv);
 			case EWhile(cond, e2):
-				EWhile(cond, mapCompr(tmp, e2));
+				EWhile(cond, mapArrCompr(tmp, e2));
 			case EDoWhile(cond, e2):
-				EDoWhile(cond, mapCompr(tmp, e2));
+				EDoWhile(cond, mapArrCompr(tmp, e2));
 			case EIf(cond, e1, e2) if( e2 == null ):
-				EIf(cond, mapCompr(tmp, e1), null);
+				EIf(cond, mapArrCompr(tmp, e1), null);
+			case EIf(cond, e1, e2) if( e2 != null ):
+				EIf(cond, mapArrCompr(tmp, e1), mapArrCompr(tmp, e2));
 			case EBlock([e]):
-				EBlock([mapCompr(tmp, e)]);
+				EBlock([mapArrCompr(tmp, e)]);
 			case EParent(e2):
-				EParent(mapCompr(tmp, e2));
+				EParent(mapArrCompr(tmp, e2));
 			default:
-				ECall( mk(EField(mk(EIdent(tmp), pmin(e), pmax(e)), "push"), pmin(e), pmax(e)), [e]);
+				// tmp.push(v);
+				//ECall( mk(EField(mk(EIdent(tmp), pmin(e), pmax(e)), "push"), pmin(e), pmax(e)), [e]);
+				ECall( mk(EIdent(tmp), pmin(e), pmax(e)), [e]);
 		}
 		return mk(edef, pmin(e), pmax(e));
+	}
+
+	function mapMapCompr( tmp : String, e : Expr ) {
+		if( e == null ) return null;
+		var edef = switch( Tools.expr(e) ) {
+			case EFor(v, it, e2):
+				EFor(v, it, mapMapCompr(tmp, e2));
+			case EForKeyValue(v, it, e2, ithv):
+				EForKeyValue(v, it, mapMapCompr(tmp, e2), ithv);
+			case EWhile(cond, e2):
+				EWhile(cond, mapMapCompr(tmp, e2));
+			case EDoWhile(cond, e2):
+				EDoWhile(cond, mapMapCompr(tmp, e2));
+			case EIf(cond, e1, e2) if( e2 == null ):
+				EIf(cond, mapMapCompr(tmp, e1), null);
+			case EIf(cond, e1, e2) if( e2 != null ):
+				EIf(cond, mapMapCompr(tmp, e1), mapMapCompr(tmp, e2));
+			case EBlock([e]):
+				EBlock([mapMapCompr(tmp, e)]);
+			case EParent(e2):
+				EParent(mapMapCompr(tmp, e2));
+			default:
+				// tmp.set(k, v);
+				switch( Tools.expr(e) ) {
+					case EBinop("=>", e1, e2):
+						//ECall( mk(EField(mk(EIdent(tmp), pmin(e), pmax(e)), "set"), pmin(e), pmax(e)), [e1, e2]);
+						ECall( mk(EIdent(tmp), pmin(e), pmax(e)), [e1, e2]);
+					default: // default incase of error
+					//ECall( mk(EField(mk(EIdent(tmp), pmin(e), pmax(e)), "push"), pmin(e), pmax(e)), [e]);
+						ECall( mk(EIdent(tmp), pmin(e), pmax(e)), [e, mk(EIdent("null"), pmin(e), pmax(e))]);
+				}
+		}
+		return mk(edef, pmin(e), pmax(e));
+	}
+
+	function isMapCompr( e : Expr ) {
+		if( e == null ) throw "Invalid map comprehension";
+		//if( e == null ) return true;
+		return switch( Tools.expr(e) ) {
+			case EFor(v, it, e2):
+				isMapCompr(e2);
+			case EForKeyValue(v, it, e2, ithv):
+				isMapCompr(e2);
+			case EWhile(cond, e2):
+				isMapCompr(e2);
+			case EDoWhile(cond, e2):
+				isMapCompr(e2);
+			case EIf(cond, e1, e2) if( e2 == null ):
+				isMapCompr(e1);
+			case EIf(cond, e1, e2) if( e2 != null ):
+				isMapCompr(e1) && isMapCompr(e1);
+			case EBlock([e]):
+				isMapCompr(e);
+			case EParent(e2):
+				isMapCompr(e2);
+			default:
+				// tmp.set(k, v);
+				return Tools.expr(e).match(EBinop("=>", _));
+		}
 	}
 
 	function makeUnop( op, e ) {
@@ -1150,6 +1284,8 @@ class Parser {
 			null;
 		}
 	}
+
+	var disableOrOp:Bool = false;
 
 	function parseExprNext( e1 : Expr ) {
 		var tk = token();

@@ -239,6 +239,12 @@ class Macro {
 				EReturn(e == null ? null : convert(e));
 			case EArray(e, index):
 				EArray(convert(e), convert(index));
+			case EMapDecl(type, keys, values): // port to array decl, haxe still uses EArrayDecl but with => as a binop
+				var el = [];
+				for( i in 0...keys.length ) {
+					el.push( hscript.Expr.EBinop("=>", keys[i], values[i]) );
+				}
+				EArrayDecl(map(el,convert));
 			case EArrayDecl(el):
 				EArrayDecl(map(el,convert));
 			case ENew(cl, params):

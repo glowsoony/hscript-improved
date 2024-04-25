@@ -55,6 +55,35 @@ class FinalCase extends TestCase {
 		Util.parse('test ? 0xFF343434 : 0xFF92A2FF');
 		Util.parse('test ? 1 : 0.75;');
 
+		Util.runKnownBug("Function then array causes error, unless the function ends with ;", function() {
+			headerCode = "";
+			function isEven(i:Int):Bool { return i % 2 == 0; }
+			assertEq("function isEven(i:Int):Bool { return i % 2 == 0; }[for(i in 0...10) if(i % 2 == 0) i => isEven(i) else i => isEven(i)]", [for(i in 0...10) if(i % 2 == 0) i => isEven(i) else i => isEven(i)]);
+		});
+
+		assertEq("[for(i in 0...10) i]", [for(i in 0...10) i]);
+		assertEq("[for(i in 0...10) i => null]", [for(i in 0...10) i => null]);
+		assertEq("[for(i in 0...10) if(i % 2 == 0) i => 'even' else i => 'odd']", [for(i in 0...10) if(i % 2 == 0) i => 'even' else i => 'odd']);
+		assertEq("[for(i in 0...10) if(i % 2 == 0) 'even' else 'odd']", [for(i in 0...10) if(i % 2 == 0) 'even' else 'odd']);
+		assertEq("[for(i in 0...10) for(j in 0...10) i * j]", [for(i in 0...10) for(j in 0...10) i * j]);
+
+		headerCode = "function isEven(i:Int):Bool { return i % 2 == 0; };";
+		function isEven(i:Int):Bool { return i % 2 == 0; }
+
+		assertEq("[for(i in 0...10) if(i % 2 == 0) i => isEven(i) else i => isEven(i)]", [for(i in 0...10) if(i % 2 == 0) i => isEven(i) else i => isEven(i)]);
+		assertEq("[for(i in 0...10) if(i % 2 == 0) isEven(i) else isEven(i)]", [for(i in 0...10) if(i % 2 == 0) isEven(i) else isEven(i)]);
+
+		headerCode = "function area(a:Int, b:Int):Int { return a * b; };";
+		function area(a:Int, b:Int):Int { return a * b; }
+
+		assertEq("[for(i in 0...10) for(j in 0...10) area(i, j)]", [for(i in 0...10) for(j in 0...10) area(i, j)]);
+
+
+		headerCode = "";
+
+		assertEq("[0=>'hello', 1=>'world']", [0=>'hello', 1=>'world']);
+		assertEq("[0=>'hello', 1=>'world'][1]", [0=>'hello', 1=>'world'][1]);
+
 		// Test EOF with preprocessor
 	}
 

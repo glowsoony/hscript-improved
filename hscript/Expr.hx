@@ -30,6 +30,14 @@ enum Const {
 	#end
 }
 
+enum MapType {
+	IntMap;
+	StringMap;
+	EnumMap;
+	ObjectMap;
+	UnknownMap;
+}
+
 #if hscriptPos
 class Expr {
 	public var e : ExprDef;
@@ -69,7 +77,8 @@ enum Expr
 	EFunction( args : Array<Argument>, e : Expr, ?name : String, ?ret : CType, ?isPublic : Bool, ?isStatic : Bool, ?isOverride : Bool );
 	EReturn( ?e : Expr );
 	EArray( e : Expr, index : Expr );
-	EArrayDecl( e : Array<Expr>, ?wantedType: CType );
+	EMapDecl( type: MapType, keys: Array<Expr>, values: Array<Expr> );
+	EArrayDecl( e : Array<Expr> );
 	ENew( cl : String, params : Array<Expr> );
 	EThrow( e : Expr );
 	ETry( e : Expr, v : String, t : Null<CType>, ecatch : Expr );
