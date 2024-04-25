@@ -646,7 +646,7 @@ class Parser {
 							values.push(eValue);
 						}
 						default:
-							error(ECustom("Expected a => b"), p1, p1);
+							error(EPreset(EXPECT_KEY_VALUE_SYNTAX), p1, p1);
 					}
 				}
 
@@ -658,7 +658,7 @@ class Parser {
 						isKeyEnum = false;
 					} else {
 						if(!isKeyObject && !isKeyEnum) {
-							error(ECustom("Unknown Type Key"), p1, p1);
+							error(EPreset(UNKNOWN_MAP_TYPE), p1, p1);
 						}
 					}
 				}
@@ -673,7 +673,7 @@ class Parser {
 				else if(isKeyObject) type = ObjectMap;
 
 				if(type == null)
-					error(ECustom("Unknown Map Type"), p1, p1);
+					error(EPreset(UNKNOWN_MAP_TYPE), p1, p1);
 
 				return parseExprNext(mk(EMapDecl(type, keys, values), p1));
 			}

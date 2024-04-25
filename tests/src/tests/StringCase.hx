@@ -130,32 +130,28 @@ class StringCase extends TestCase {
 		assertEq("'hello ${5} world'", 'hello ${5} world');
 		assertEq("'hello ${5}'", 'hello ${5}');
 
-		//Util.runKnownBug("string.code doesnt work", () -> {
-			assertEq('"f".code', "f".code);
-			assertEq('"o".code', "o".code);
-			assertEq('"1".code', "1".code);
-			assertEq('"b".code', "b".code);
-			assertEq('"a".code', "a".code);
-			assertEq('"r".code', "r".code);
-			assertEq('"r".code', "r".code);
-			assertError('"foo".code', Parser.getBaseError(EPreset(INVALID_CHAR_CODE_MULTI))); // multiple chars causes error
-			assertError('"bar".code', Parser.getBaseError(EPreset(INVALID_CHAR_CODE_MULTI))); // multiple chars causes error
-		//});
+		assertEq('"f".code', "f".code);
+		assertEq('"o".code', "o".code);
+		assertEq('"1".code', "1".code);
+		assertEq('"b".code', "b".code);
+		assertEq('"a".code', "a".code);
+		assertEq('"r".code', "r".code);
+		assertEq('"r".code', "r".code);
+		assertError('"foo".code', Parser.getBaseError(EPreset(INVALID_CHAR_CODE_MULTI))); // multiple chars causes error
+		assertError('"bar".code', Parser.getBaseError(EPreset(INVALID_CHAR_CODE_MULTI))); // multiple chars causes error
 
 		headerCode = '';
 		var a = 103;
 
-		//Util.runKnownBug("String.fromCharCode doesnt work", () -> {
-			assertEq('String.fromCharCode(65)', String.fromCharCode(65));
-			assertEq('String.fromCharCode(97)', String.fromCharCode(97));
-			assertEq('String.fromCharCode(98)', String.fromCharCode(98));
-			assertEq('String.fromCharCode(99)', String.fromCharCode(99));
-			assertEq('String.fromCharCode(100)', String.fromCharCode(100));
-			assertEq('String.fromCharCode(101)', String.fromCharCode(101));
-			assertEq('String.fromCharCode(102)', String.fromCharCode(102));
-			assertEq('String.fromCharCode(103)', String.fromCharCode(103));
-			assertEq('var a = 103; String.fromCharCode(a)', String.fromCharCode(test));
-		//});
+		assertEq('String.fromCharCode(65)', String.fromCharCode(65));
+		assertEq('String.fromCharCode(97)', String.fromCharCode(97));
+		assertEq('String.fromCharCode(98)', String.fromCharCode(98));
+		assertEq('String.fromCharCode(99)', String.fromCharCode(99));
+		assertEq('String.fromCharCode(100)', String.fromCharCode(100));
+		assertEq('String.fromCharCode(101)', String.fromCharCode(101));
+		assertEq('String.fromCharCode(102)', String.fromCharCode(102));
+		assertEq('String.fromCharCode(103)', String.fromCharCode(103));
+		assertEq('var a = 103; String.fromCharCode(a)', String.fromCharCode(test));
 
 		assertError("'hello ${}'", Parser.getBaseError(EPreset(EMPTY_INTERPOLATION)));
 	}

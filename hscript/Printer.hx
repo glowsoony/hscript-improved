@@ -521,6 +521,13 @@ class Printer {
 		return Type.enumEq(Tools.cleanError(e1), Tools.cleanError(e2));
 	}
 
+	public inline static function getPrintableError( e : Error ) {
+		return Tools.cleanError(switch( Tools.cleanError(e) ) {
+			case EPreset(msg): Parser.getBaseError(ECustom(msg.toString()));
+			default: e;
+		});
+	}
+
 	public static function errorToString( e : Error ) {
 		var message = switch( Tools.cleanError(e) ) {
 			case EInvalidChar(c): "Invalid character: '"+(StringTools.isEof(c) ? "EOF (End Of File)" : String.fromCharCode(c))+"' ("+c+")";
@@ -533,7 +540,7 @@ class Printer {
 			case EInvalidOp(op): "Invalid operator: "+op;
 			case EInvalidAccess(f): "Invalid access to field " + f;
 			case ECustom(msg): msg;
-			case EPreset(msg): msg;
+			case EPreset(msg): msg.toString();
 			case EInvalidClass(cla): "Invalid class: " + cla + " was not found.";
 			case EAlreadyExistingClass(cla): 'Custom Class named $cla already exists.';
 			case EInvalidEscape(s): "Invalid escape sequence: " + s;

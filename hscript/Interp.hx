@@ -818,7 +818,7 @@ class Interp {
 					var t = b2i(isKeyString) + b2i(isKeyInt) + b2i(isKeyObject) + b2i(isKeyEnum);
 
 					if(t != 1)
-						error(ECustom("Unknown Map Type"));
+						error(EPreset(UNKNOWN_MAP_TYPE_RUNTIME));
 					else if(isKeyInt) type = IntMap;
 					else if(isKeyString) type = StringMap;
 					else if(isKeyEnum) type = EnumMap;

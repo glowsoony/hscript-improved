@@ -18,7 +18,7 @@ class Preprocessor {
 		if(e == null)
 			return null;
 
-		trace(expr(e));
+		//trace(expr(e));
 
 		e = Tools.map(e, function(e) {
 			return process(e);
@@ -35,13 +35,13 @@ class Preprocessor {
 					case EConst(CInt(i)):
 						return mk(EConst(CString(String.fromCharCode(i))), e);
 					default:
-						// __StringWorkaround__fromCharCode(i);
-						#if !NO_FROM_CHAR_CODE_FIX
-						return mk(ECall(mk(EIdent("__StringWorkaround__fromCharCode"), e), [e]), e);
-						#else
-						throw Parser.getBaseError(EPreset(FROM_CHAR_CODE_NON_INT));
-						#end
 				}
+				// __StringWorkaround__fromCharCode(i);
+				#if !NO_FROM_CHAR_CODE_FIX
+				return mk(ECall(mk(EIdent("__StringWorkaround__fromCharCode"), e), [e]), e);
+				#else
+				throw Parser.getBaseError(EPreset(FROM_CHAR_CODE_NON_INT));
+				#end
 			default:
 		}
 

@@ -21,6 +21,7 @@ class TestCase extends HScriptRunner {
 	}
 
 	public function assertError(script:String, expectedError:hscript.Error, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
+		var expectedError = Printer.getPrintableError(expectedError);
 		if(message == null)
 			message = script;
 		try {
@@ -29,17 +30,18 @@ class TestCase extends HScriptRunner {
 			else
 				executeUnsafe(script);
 			Sys.println("# For script: " + script);
-			Sys.println("## Expected error: " + Tools.cleanError(expectedError));
+			Sys.println("## Expected error: " + expectedError);
 			Sys.println("## Got result: " + result);
 			Sys.println("> " + Printer.convertExprToString(lastExpr));
 			return Util.failed();
 		} catch(e:hscript.Error) {
-			if(Printer.compareErrors(e, expectedError)) {
+			var e = Printer.getPrintableError(e);
+			if(Type.enumEq(e, expectedError)) {
 				return Util.passed();
 			} else {
 				Sys.println("# For script: " + script);
-				Sys.println("## Expected error: " + Tools.cleanError(expectedError));
-				Sys.println("## Actual error: " + Tools.cleanError(e));
+				Sys.println("## Expected error: " + expectedError);
+				Sys.println("## Actual error: " + e);
 				return Util.failed();
 			}
 		}

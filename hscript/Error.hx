@@ -60,8 +60,34 @@ enum Error
 	EInvalidEscape( s : String );
 }
 
-enum abstract ErrorMessage(String) to String {
-    final INVALID_CHAR_CODE_MULTI = "'char'.code only works on single characters";
-    final FROM_CHAR_CODE_NON_INT = "String.fromCharCode only works on integers";
-    final EMPTY_INTERPOLATION = "Invalid interpolation: Expression cannot be empty";
+enum abstract ErrorMessage(Int) from Int to Int {
+    final INVALID_CHAR_CODE_MULTI;
+    final FROM_CHAR_CODE_NON_INT;
+    final EMPTY_INTERPOLATION;
+    final UNKNOWN_MAP_TYPE;
+    final UNKNOWN_MAP_TYPE_RUNTIME;
+    final EXPECT_KEY_VALUE_SYNTAX;
+
+    public function toString():String {
+        return switch(cast this) {
+            case INVALID_CHAR_CODE_MULTI: "'char'.code only works on single characters";
+            case FROM_CHAR_CODE_NON_INT: "String.fromCharCode only works on integers";
+            case EMPTY_INTERPOLATION: "Invalid interpolation: Expression cannot be empty";
+            case UNKNOWN_MAP_TYPE: "Unknown Map Type";
+            case UNKNOWN_MAP_TYPE_RUNTIME: "Unknown Map Type, while parsing at runtime";
+            case EXPECT_KEY_VALUE_SYNTAX: "Expected a => b";
+        }
+    }
+
+    public static function fromString(s:String):ErrorMessage {
+        return switch(s) {
+            case "INVALID_CHAR_CODE_MULTI": INVALID_CHAR_CODE_MULTI;
+            case "FROM_CHAR_CODE_NON_INT": FROM_CHAR_CODE_NON_INT;
+            case "EMPTY_INTERPOLATION": EMPTY_INTERPOLATION;
+            case "UNKNOWN_MAP_TYPE": UNKNOWN_MAP_TYPE;
+            case "UNKNOWN_MAP_TYPE_RUNTIME": UNKNOWN_MAP_TYPE_RUNTIME;
+            case "EXPECT_KEY_VALUE_SYNTAX": EXPECT_KEY_VALUE_SYNTAX;
+            default: throw "Unknown ErrorMessage";
+        }
+    }
 }
