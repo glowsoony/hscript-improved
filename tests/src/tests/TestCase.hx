@@ -20,6 +20,20 @@ class TestCase extends HScriptRunner {
 		return true;
 	}
 
+	public function assertCompiles(script:String, ?message:String, ?pos:haxe.PosInfos) {
+		if(message == null)
+			message = script;
+		try {
+			var result = Util.parseUnsafe(script);
+		} catch(e:hscript.Error) {
+			var e = Printer.getPrintableError(e);
+			Sys.println("# Error trying to compile: " + script);
+			Sys.println("## Error: " + e);
+			return Util.failed();
+		}
+		return Util.passed();
+	}
+
 	public function assertError(script:String, expectedError:hscript.Error, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
 		var expectedError = Printer.getPrintableError(expectedError);
 		if(message == null)

@@ -46,6 +46,7 @@ enum Token {
 	TEof;
 	TConst( c : Const );
 	TInterpString( tkl: Array<TokenList> ); // Stores the tokens that make up the interpolation string
+	TRegex( r: String, opt: String );
 	TId( s : String );
 	TOp( s : String );
 	TPOpen;
@@ -103,7 +104,7 @@ class Parser {
 	/**
 		resume from parsing errors (when parsing incomplete code, during completion for example)
 	**/
-	public var resumeErrors : Bool;
+	public var resumeErrors : Bool = false;
 
 	// implementation
 	var input : String;
@@ -479,6 +480,9 @@ class Parser {
 				}
 			}
 
+			return parseExprNext(e);
+		case TRegex(r, opt):
+			var e = mk(EParent(mk(ENew("EReg", [mk(EConst(CString(r))), mk(EConst(CString(opt)))]), p1)), p1);
 			return parseExprNext(e);
 		case TPOpen:
 			tk = token();
@@ -2315,6 +2319,27 @@ class Parser {
 				}
 				invalidChar(char);
 			default:
+				if(char == '~'.code) {
+					var char = readChar();
+					if( char == "/".code ) {
+						var regex = getRegexBody();
+						var opt = "";
+						while( true ) {
+							char = readChar();
+							if( char != 'g'.code && char != 'i'.code && char != 'm'.code && char != 's'.code && char != 'u'.code ) {
+								if( char >= 'a'.code && char <= 'z'.code ) {
+									error(ECustom('Invalid regex expression option "' + String.fromCharCode(char) + '"'), readPos, readPos);
+								}
+								this.char = char;
+								return TRegex(regex, opt);
+							}
+							opt += String.fromCharCode(char);
+						}
+					}
+					readPos--;
+					//this.char = peekChar();
+				}
+
 				if( ops[char] ) {
 					var op = String.fromCharCode(char);
 					while( true ) {
@@ -2352,6 +2377,57 @@ class Parser {
 			char = readChar();
 		}
 		return null;
+	}
+
+	function getRegexBody() {
+		var regex = new StringBuf();
+		var esc = false;
+		var start = readPos-2;
+		while( true ) {
+			var char = readChar();
+			if(StringTools.isEof(char))
+				error(EUnterminatedRegex, start, start);
+			if( char == "\n".code || char == "\r".code )
+				error(EUnterminatedRegex, start, readPos-1);
+
+			if( esc ) {
+				esc = false;
+				switch( char ) {
+					case '/'.code: regex.addChar("/".code);
+					case 'n'.code: regex.addChar("\n".code);
+					case 'r'.code: regex.addChar("\r".code);
+					case 't'.code: regex.addChar("\t".code);
+					case '\\'.code, '$'.code, '.'.code, '*'.code, '+'.code, '^'.code, '|'.code, '{'.code, '}'.code, '['.code, ']'.code, '('.code, ')'.code, '?'.code, '-'.code:
+						regex.addChar(char);
+					case '0'.code | '1'.code | '2'.code | '3'.code | '4'.code | '5'.code | '6'.code | '7'.code | '8'.code | '9'.code:
+						regex.addChar("\\".code);
+						regex.addChar(char);
+					case 'w'.code, 'W'.code, 'b'.code, 'B'.code, 's'.code, 'S'.code, 'd'.code, 'D'.code, 'x'.code:
+						regex.addChar("\\".code);
+						regex.addChar(char);
+					case 'u'.code, 'U'.code: // UNICODE
+						regex.addChar("\\".code);
+						for( i in 0...4 ) {
+							var c = readChar();
+							if( StringTools.isEof(c) )
+								error(EUnterminatedRegex, start, readPos-1);
+							var h = convertHex(c);
+							if( h == -1 )
+								invalidChar(c);
+							regex.addChar(c);
+						}
+
+					default: invalidChar(char);
+				}
+			} else if( char == "\\".code ) {
+				esc = true;
+				continue;
+			} else if( char == "/".code )
+				break;
+			else
+				regex.addChar(char);
+		}
+		return regex.toString();
 	}
 
 	function preprocValue( id : String ) : Dynamic {
@@ -2531,6 +2607,7 @@ class Parser {
 		case TEof: "<eof>";
 		case TConst(c): constString(c);
 		case TInterpString(tg): constInterpString(tg);
+		case TRegex(r, opt): '~/' + r + '/' + opt;
 		case TId(s): s;
 		case TOp(s): s;
 		case TPOpen: "(";

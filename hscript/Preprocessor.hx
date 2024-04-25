@@ -9,19 +9,54 @@ import hscript.Parser;
 class Preprocessor {
 	static inline function expr(e:Expr) return Tools.expr(e);
 
+	private static var importStack:Array<Array<String>> = [];
+	private static function addImport(e:String, ?as:String) {
+		for(i in importStack)
+			if(i[0] == e)
+				return;
+		importStack.push([e, as]);
+	}
+
 	/**
 	 * Preprocesses the expression, like 'a'.code => 97
 	 * Also for transforming any abstracts into their implementations (TODO)
 	 * Also for transforming any static extensions into their real form (TODO)
+	 * Also to automatically add imports for stuff that is not imported
 	**/
-	public static function process(e:Expr, doBlock:Bool = true):Expr {
+	public static function process(e:Expr, top:Bool = true):Expr {
+		importStack = [];
+		var e = _process(e, top);
+
+		// Automatically add imports for stuff
+		switch(expr(e)) {
+			case EBlock(exprs):
+				while(importStack.length > 0) {
+					var im = importStack.pop();
+					exprs.unshift(mk(EImport(im[0], im[1]), e));
+				}
+				return mk(EBlock(exprs), e);
+			default:
+				if(importStack.length > 0) {
+					var exprs = [];
+					while(importStack.length > 0) {
+						var im = importStack.pop();
+						exprs.unshift(mk(EImport(im[0], im[1]), e));
+					}
+					exprs.push(e);
+					return mk(EBlock(exprs), e);
+				}
+		}
+		return e;
+	}
+
+	private static function _process(e:Expr, top:Bool = true):Expr {
 		if(e == null)
 			return null;
 
 		//trace(expr(e));
 
 		e = Tools.map(e, function(e) {
-			return process(e);
+			return _process(e, false);
 		});
 
 		switch(expr(e)) {
@@ -42,6 +77,12 @@ class Preprocessor {
 				#else
 				throw Parser.getBaseError(EPreset(FROM_CHAR_CODE_NON_INT));
 				#end
+			case ENew("String", _):
+				addImport("String");
+			case ENew("EReg", _):
+				addImport("EReg");
+			case EField(expr(_) => EIdent("EReg"), "escape", _):
+				addImport("EReg");
 			default:
 		}
 

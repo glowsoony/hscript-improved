@@ -22,6 +22,7 @@ class Main {
 		runTest("BinOp", new BinOpCase());
 		runTest("Enum", new EnumCase());
 		runTest("EvalOrder", new EvalOrderCase());
+		runTest("Error", new ErrorCase());
 		runTest("Float", new FloatCase());
 		runTest("IntIterator", new IntIteratorCase());
 		runTest("Lambda", new LambdaCase());

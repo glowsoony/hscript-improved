@@ -48,6 +48,7 @@ enum Error
 	EUnexpected( s : String );
 	EUnterminatedString;
 	EUnterminatedComment;
+	EUnterminatedRegex;
 	EInvalidPreprocessor( msg : String );
 	EUnknownVariable( v : String );
 	EInvalidIterator( v : String );
@@ -77,18 +78,6 @@ enum abstract ErrorMessage(Int) from Int to Int {
             case UNKNOWN_MAP_TYPE: "Unknown Map Type";
             case UNKNOWN_MAP_TYPE_RUNTIME: "Unknown Map Type, while parsing at runtime";
             case EXPECT_KEY_VALUE_SYNTAX: "Expected a => b";
-        }
-    }
-
-    public static function fromString(s:String):ErrorMessage {
-        return switch(s) {
-            case "INVALID_CHAR_CODE_MULTI": INVALID_CHAR_CODE_MULTI;
-            case "FROM_CHAR_CODE_NON_INT": FROM_CHAR_CODE_NON_INT;
-            case "EMPTY_INTERPOLATION": EMPTY_INTERPOLATION;
-            case "UNKNOWN_MAP_TYPE": UNKNOWN_MAP_TYPE;
-            case "UNKNOWN_MAP_TYPE_RUNTIME": UNKNOWN_MAP_TYPE_RUNTIME;
-            case "EXPECT_KEY_VALUE_SYNTAX": EXPECT_KEY_VALUE_SYNTAX;
-            default: throw "Unknown ErrorMessage";
         }
     }
 }
