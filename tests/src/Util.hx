@@ -1,4 +1,4 @@
-import hscript.Error;
+import hscript.Expr.Error;
 import hscript.Printer;
 import haxe.Constraints.IMap;
 import haxe.EnumTools.EnumValueTools;
@@ -225,15 +225,19 @@ class Util {
 		return p.parseString(str);
 	}
 
+	public static var defaultImport = true;
+
 	public static function getInterp() {
 		var interp = new Interp();
 		//interp.importEnabled = true;
 		//interp.allowStaticVariables = true;
 		//interp.allowPublicVariables = true;
-		interp.variables.set("Math", Math);
-		interp.variables.set("Std", Std);
-		interp.variables.set("Type", Type);
-		interp.variables.set("StringTools", StringTools);
+		if(defaultImport) {
+			interp.variables.set("Math", Math);
+			interp.variables.set("Std", Std);
+			interp.variables.set("Type", Type);
+			interp.variables.set("StringTools", StringTools);
+		}
 		return interp;
 	}
 
@@ -273,7 +277,7 @@ class Util {
 		return nanoseconds + " ns";
 	}
 
-	public static function errorHandler(error:hscript.Error) {
+	public static function errorHandler(error:Error) {
 		#if hscriptPos
 		var fileName = error.origin;
 		var fn = '$fileName:${error.line}: ';

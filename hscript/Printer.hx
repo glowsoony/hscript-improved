@@ -205,10 +205,13 @@ class Printer {
 		// TODO: make else if print correctly
 
 		switch( Tools.expr(e) ) {
-		case EImport(c, n):
+		case EImport(c, mode):
 			add("import " + c);
-			if(n != null)
-				add(' as $n');
+			switch(mode) {
+				case IAs(name): add(' as $name');
+				case IAll: add('.*');
+				default:
+			}
 		case EClass(name, fields, extend, interfaces):
 			add('class $name');
 			if (extend != null)
@@ -540,6 +543,7 @@ class Printer {
 			case EInvalidIterator(v): "Invalid iterator: "+v;
 			case EInvalidType(t): "Invalid type: "+t;
 			case EInvalidOp(op): "Invalid operator: "+op;
+			case EInvalidAccess(f, on) if (on != null): "Invalid access to field " + f + " on " + on;
 			case EInvalidAccess(f): "Invalid access to field " + f;
 			case ECustom(msg): msg;
 			case EPreset(msg): msg.toString();

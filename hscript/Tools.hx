@@ -21,13 +21,14 @@
  */
 package hscript;
 import hscript.Expr;
+import hscript.utils.UnsafeReflect;
 
 class Tools {
 
 	public static function iter( e : Expr, f : Expr -> Void ) {
 		switch( expr(e) ) {
 		case EConst(_), EIdent(_):
-		case EImport(c): f(e);
+		case EImport(c, _): f(e);
 		case EClass(_, e, _, _): for( a in e ) f(a);
 		case EVar(_, _, e): if( e != null ) f(e);
 		case EParent(e): f(e);
@@ -204,4 +205,20 @@ class Tools {
 		return -1;
 	}
 
+
+	public static function getEnum(cl:Enum<Dynamic>):Dynamic {
+		var enumThingy:Dynamic = {};
+		for (c in cl.getConstructors()) {
+			try {
+				UnsafeReflect.setField(enumThingy, c, cl.createByName(c));
+			} catch(e) {
+				try {
+					UnsafeReflect.setField(enumThingy, c, Reflect.makeVarArgs((args:Array<Dynamic>) -> cl.createByName(c, args)));
+				} catch(ex) {
+					throw e;
+				}
+			}
+		}
+		return enumThingy;
+	}
 }

@@ -227,9 +227,8 @@ class Parser {
 		expr = Preprocessor.process(expr);
 		if(Parser.optimize) {
 			expr = Optimizer.optimize(expr);
-			var printer = new Printer();
 			trace("INPUT: " + s);
-			trace("OUTPUT: " + printer.exprToString(expr));
+			trace("OUTPUT: " + Printer.toString(expr));
 		}
 		return expr;
 	}
@@ -1049,27 +1048,21 @@ class Parser {
 			var oldReadPos = readPos;
 			var tk = token();
 			switch( tk ) {
-				case TPOpen:
+				case TPOpen: // Support legacy import() syntax
 					var tok = token();
 					switch(tok) {
-						case TConst(c):
-							switch(c) {
-								case CString(s):
-									token();
-									ensure(TSemicolon);
-									push(TSemicolon);
-									mk(EImport(s), p1);
-								default:
-									unexpected(tok);
-									null;
-							}
+						case TConst(CString(s)):
+							token();
+							ensure(TSemicolon);
+							push(TSemicolon);
+							mk(EImport(s, INormal), p1);
 						default:
 							unexpected(tok);
 							null;
 					}
 				case TId(id):
 					var path = [id];
-					var as:String = null;
+					var mode:KImportMode = INormal;
 					var t = null;
 					while( true ) {
 						t = token();
@@ -1078,20 +1071,19 @@ class Parser {
 								t = token();
 								switch( t ) {
 									case TId(id):
-										as = id;
+										mode = IAs(StringTools.trim(id));
 									default:
 										unexpected(t);
 								}
 								break;
 							}
-
 							push(t);
 							break;
 						}
 						t = token();
 						switch( t ) {
 							case TId(id):
-								path.push(id);
+								path.push(StringTools.trim(id));
 							default:
 								unexpected(t);
 						}
@@ -1099,7 +1091,7 @@ class Parser {
 					ensure(TSemicolon);
 					push(TSemicolon);
 					var p = path.join(".");
-					mk(EImport(p, as),p1);
+					mk(EImport(p, mode),p1);
 				default:
 					unexpected(tk);
 					null;

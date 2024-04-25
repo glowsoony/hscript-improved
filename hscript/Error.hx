@@ -22,7 +22,7 @@
 package hscript;
 
 #if hscriptPos
-class Error {
+class Error_ {
 	public var e : ErrorDef;
 	public var pmin : Int;
 	public var pmax : Int;
@@ -41,7 +41,7 @@ class Error {
 }
 enum ErrorDef
 #else
-enum Error
+enum Error_
 #end
 {
 	EInvalidChar( c : Int );
@@ -54,7 +54,7 @@ enum Error
 	EInvalidIterator( v : String );
 	EInvalidType( t : String );
 	EInvalidOp( op : String );
-	EInvalidAccess( f : String );
+	EInvalidAccess( f : String, ?on : String );
 	ECustom( msg : String );
 	EPreset( msg : ErrorMessage );
 	EInvalidClass( className : String);

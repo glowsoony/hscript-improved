@@ -2,6 +2,7 @@ package tests;
 
 import hscript.Printer;
 import hscript.Tools;
+import hscript.Expr.Error;
 
 @:access(hscript.Interp)
 @:access(hscript.Parser)
@@ -25,7 +26,7 @@ class TestCase extends HScriptRunner {
 			message = script;
 		try {
 			var result = Util.parseUnsafe(script);
-		} catch(e:hscript.Error) {
+		} catch(e:Error) {
 			var e = Printer.getPrintableError(e);
 			Sys.println("# Error trying to compile: " + script);
 			Sys.println("## Error: " + e);
@@ -34,7 +35,7 @@ class TestCase extends HScriptRunner {
 		return Util.passed();
 	}
 
-	public function assertError(script:String, expectedError:hscript.Error, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
+	public function assertError(script:String, expectedError:Error, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
 		var expectedError = Printer.getPrintableError(expectedError);
 		if(message == null)
 			message = script;

@@ -9,12 +9,16 @@ import hscript.Parser;
 class Preprocessor {
 	static inline function expr(e:Expr) return Tools.expr(e);
 
-	private static var importStack:Array<Array<String>> = [];
-	private static function addImport(e:String, ?as:String) {
-		for(i in importStack)
-			if(i[0] == e)
-				return;
-		importStack.push([e, as]);
+	private static var importStackName:Array<String> = [];
+	private static var importStackMode:Array<KImportMode> = [];
+	private static function addImport(e:String, mode:KImportMode = INormal) {
+		for(i in importStackName) if(i == e) return;
+		importStackName.push(e);
+		importStackMode.push(mode);
+	}
+
+	private static function popImport(e:Expr) {
+		return mk(EImport(importStackName.pop(), importStackMode.pop()), e);
 	}
 
 	/**
@@ -24,23 +28,22 @@ class Preprocessor {
 	 * Also to automatically add imports for stuff that is not imported
 	**/
 	public static function process(e:Expr, top:Bool = true):Expr {
-		importStack = [];
+		importStackName = [];
+		importStackMode = [];
 		var e = _process(e, top);
 
 		// Automatically add imports for stuff
 		switch(expr(e)) {
 			case EBlock(exprs):
-				while(importStack.length > 0) {
-					var im = importStack.pop();
-					exprs.unshift(mk(EImport(im[0], im[1]), e));
+				while(importStackName.length > 0) {
+					exprs.unshift(popImport(e));
 				}
 				return mk(EBlock(exprs), e);
 			default:
-				if(importStack.length > 0) {
+				if(importStackName.length > 0) {
 					var exprs = [];
-					while(importStack.length > 0) {
-						var im = importStack.pop();
-						exprs.unshift(mk(EImport(im[0], im[1]), e));
+					while(importStackName.length > 0) {
+						exprs.unshift(popImport(e));
 					}
 					exprs.push(e);
 					return mk(EBlock(exprs), e);
@@ -53,11 +56,12 @@ class Preprocessor {
 		if(e == null)
 			return null;
 
-		//trace(expr(e));
+		// If stuff looks wrong, add this back
+		//e = Tools.map(e, function(e) {
+		//	return _process(e, false);
+		//});
 
-		e = Tools.map(e, function(e) {
-			return _process(e, false);
-		});
+		//trace(expr(e));
 
 		switch(expr(e)) {
 			case EField(expr(_) => EConst(CString(s)), "code", _): // Transform string.code into charCode
@@ -65,26 +69,57 @@ class Preprocessor {
 					throw Parser.getBaseError(EPreset(INVALID_CHAR_CODE_MULTI));
 				}
 				return mk(EConst(CInt(s.charCodeAt(0))), e);
-			case ECall(expr(_) => EField(expr(_) => EIdent("String"), "fromCharCode", _), [e]):
-				switch(expr(e)) {
+			case ECall(expr(_) => EField(expr(_) => EIdent("String"), "fromCharCode", _), [e]): // Seperate this later?
+				switch(expr(e)) { // should this be Optimizer?
 					case EConst(CInt(i)):
 						return mk(EConst(CString(String.fromCharCode(i))), e);
 					default:
 				}
-				// __StringWorkaround__fromCharCode(i);
-				#if !NO_FROM_CHAR_CODE_FIX
-				return mk(ECall(mk(EIdent("__StringWorkaround__fromCharCode"), e), [e]), e);
-				#else
-				throw Parser.getBaseError(EPreset(FROM_CHAR_CODE_NON_INT));
-				#end
-			case ENew("String", _):
-				addImport("String");
-			case ENew("EReg", _):
-				addImport("EReg");
-			case EField(expr(_) => EIdent("EReg"), "escape", _):
-				addImport("EReg");
+				if(!Preprocessor.isStringFromCharCodeFixed) {
+					// __StringWorkaround__fromCharCode(i);
+					#if !NO_FROM_CHAR_CODE_FIX
+					return mk(ECall(mk(EIdent("__StringWorkaround__fromCharCode"), e), [e]), e);
+					#else
+					throw Parser.getBaseError(EPreset(FROM_CHAR_CODE_NON_INT));
+					#end
+				}
+
+			// Automatically add imports for stuff
+			case ENew("String", _): addImport("String");
+			case EIdent("String"): addImport("String");
+			case ENew("StringBuf", _): addImport("StringBuf");
+			case EIdent("StringBuf"): addImport("StringBuf");
+			case EIdent("Bool"): addImport("Bool");
+			case EIdent("Float"): addImport("Float");
+			case EIdent("Int"): addImport("Int");
+			case ENew("IntIterator", _): addImport("IntIterator");
+			case EIdent("IntIterator"): addImport("IntIterator");
+			case EIdent("Array"): addImport("Array");
+
+			case EIdent("Sys"): addImport("Sys");
+			case EIdent("Std"): addImport("Std");
+			case EIdent("Type"): addImport("Type");
+			case EIdent("Reflect"): addImport("Reflect");
+			case EIdent("StringTools"): addImport("StringTools");
+			case EIdent("Math"): addImport("Math");
+			case ENew("Date", _): addImport("Date");
+			case EIdent("Date"): addImport("Date");
+			case EIdent("DateTools"): addImport("DateTools");
+			case EIdent("Lambda"): addImport("Lambda");
+			case ENew("Xml", _): addImport("Xml");
+			case EIdent("Xml"): addImport("Xml");
+			//case EIdent("List"): addImport("haxe.ds.List");
+
+			case ENew("EReg", _): addImport("EReg");
+			case EIdent("EReg"): addImport("EReg");
+			//case EField(expr(_) => EIdent("EReg"), "escape", _):
+			//	addImport("EReg");
 			default:
 		}
+
+		e = Tools.map(e, function(e) {
+			return _process(e, false);
+		});
 
 		return e;
 	}
@@ -95,5 +130,18 @@ class Preprocessor {
 		#else
 		return e;
 		#end
+	}
+
+	public static var isStringFromCharCodeFixed(get, null):Null<Bool> = null;
+	static function get_isStringFromCharCodeFixed():Null<Bool> {
+		if(isStringFromCharCodeFixed == null) {
+			try {
+				Reflect.callMethod(null, Reflect.field(String, "fromCharCode"), [65]);
+				isStringFromCharCodeFixed = true;
+			} catch(e:Dynamic) {
+				isStringFromCharCodeFixed = false;
+			}
+		}
+		return isStringFromCharCodeFixed;
 	}
 }

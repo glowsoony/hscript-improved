@@ -38,6 +38,8 @@ enum MapType {
 	UnknownMap;
 }
 
+typedef Error = hscript.Error.Error_;
+
 #if hscriptPos
 class Expr {
 	public var e : ExprDef;
@@ -89,8 +91,14 @@ enum Expr
 	EMeta( name : String, args : Array<Expr>, e : Expr );
 	ECheckType( e : Expr, t : CType );
 
-	EImport( c : String, ?as:String, ?f:String );
+	EImport( c : String, mode: KImportMode );
 	EClass( name:String, fields:Array<Expr>, ?extend:String, interfaces:Array<String> );
+}
+
+enum KImportMode {
+	INormal;
+	IAs( name : String );
+	IAll;
 }
 
 class ObjectField {

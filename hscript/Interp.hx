@@ -159,10 +159,12 @@ class Interp {
 		variables.set("true", true);
 		variables.set("false", false);
 		#if !NO_FROM_CHAR_CODE_FIX
-		// DONT CALL THIS DIRECTLY, USE String.fromCharCode, the preprocessor will call it for you
-		variables.set("__StringWorkaround__fromCharCode", function(a:Int) { // TODO: make hscript only add this if its used
-			return String.fromCharCode(a);
-		});
+		if(!Preprocessor.isStringFromCharCodeFixed) {
+			// DONT CALL THIS DIRECTLY, USE String.fromCharCode, the preprocessor will call it for you
+			variables.set("__StringWorkaround__fromCharCode", function(a:Int) { // TODO: make hscript only add this if its used
+				return String.fromCharCode(a);
+			});
+		}
 		#end
 		variables.set("trace", Reflect.makeVarArgs(function(el) {
 			var inf = posInfos();
@@ -529,6 +531,22 @@ class Interp {
 		return null;
 	}
 
+	function getClass(c:String):haxe.ds.Either<Class<Any>, Enum<Any>> {
+		if (importBlocklist.contains(c))
+			return null;
+
+		var en = Type.resolveEnum(c);
+		if(en != null)
+			return Right(en);
+
+		var cl = Type.resolveClass(c);
+		if (cl == null)
+			cl = Type.resolveClass(c + '_HSC');
+		if(cl != null)
+			return Left(cl);
+		return null;
+	}
+
 	public function expr(e:Expr):Dynamic {
 		#if hscriptPos
 		curExpr = e;
@@ -546,73 +564,67 @@ class Interp {
 					return variable == null ? thing : Type.getClassName(variable);
 				}
 				customClasses.set(name, new CustomClassHandler(this, name, fields, importVar(extend), [for (i in interfaces) importVar(i)]));
-			case EImport(c, n):
+			case EImport(c, mode):
 				if (!importEnabled)
 					return null;
-				var splitClassName = [for (e in c.split(".")) e.trim()];
-				var realClassName = splitClassName.join(".");
-				var claVarName = splitClassName[splitClassName.length - 1];
-				var toSetName = n != null ? n : claVarName;
-				var oldClassName = realClassName;
-				var oldSplitName = splitClassName.copy();
 
-				if (variables.exists(toSetName)) // class is already imported
+				if(mode == IAll) {
+					throw "TODO";
+					return null;
+				}
+
+				var splitClassName = c.split(".");
+				var origSplitClassName = splitClassName.copy();
+				var field = null;
+
+				var varName = switch(mode) {
+					case IAs(name): name;
+					default: splitClassName[splitClassName.length - 1];
+				}
+
+				if (variables.exists(varName)) // class is already imported
 					return null;
 
-				if (importBlocklist.contains(realClassName))
-					return null;
-				var cl = Type.resolveClass(realClassName);
-				if (cl == null)
-					cl = Type.resolveClass('${realClassName}_HSC');
-
-				var en = Type.resolveEnum(realClassName);
-
-				//trace(realClassName, cl, en, splitClassName);
+				var cl = getClass(c);
 
 				// Allow for flixel.ui.FlxBar.FlxBarFillDirection;
-				if (cl == null && en == null) {
-					if(splitClassName.length > 1) {
-						splitClassName.splice(-2, 1); // Remove the last last item
-						realClassName = splitClassName.join(".");
+				if(cl == null && origSplitClassName.length > 1) {
+					splitClassName = origSplitClassName.copy();
 
-						if (importBlocklist.contains(realClassName))
-							return null;
-
-						cl = Type.resolveClass(realClassName);
-						if (cl == null)
-							cl = Type.resolveClass('${realClassName}_HSC');
-
-						en = Type.resolveEnum(realClassName);
-
-						//trace(realClassName, cl, en, splitClassName);
-					}
+					splitClassName.splice(-2, 1); // Remove the last last item
+					cl = getClass(splitClassName.join("."));
 				}
 
-				if (cl == null && en == null) {
-					if (importFailedCallback == null || !importFailedCallback(oldSplitName))
-						error(EInvalidClass(oldClassName));
-				} else {
-					if (en != null) {
-						// ENUM!!!!
-						var enumThingy = {};
-						for (c in en.getConstructors()) {
-							try {
-								UnsafeReflect.setField(enumThingy, c, en.createByName(c));
-							} catch(e) {
-								try {
-									UnsafeReflect.setField(enumThingy, c, Reflect.makeVarArgs((args:Array<Dynamic>) -> en.createByName(c, args)));
-								} catch(ex) {
-									throw e;
-								}
-							}
-						}
-						//var enumThingy = en;
-						variables.set(toSetName, enumThingy);
-					} else {
-						variables.set(toSetName, cl);
-					}
+				// Allow for Std.isOfType;
+				if(cl == null && origSplitClassName.length > 1) {
+					splitClassName = origSplitClassName.copy();
+
+					field = splitClassName.pop();
+					cl = getClass(splitClassName.join("."));
 				}
 
+				if (cl != null) {
+					var value:Dynamic = switch(cl) {
+						case Left(e): e;
+						case Right(e): Tools.getEnum(e);
+					}
+					if(field != null) { // import Std.isOfType;
+						var v:Dynamic = null;
+						if(v == null)
+							v = UnsafeReflect.getProperty(value, field);
+						if(v == null)
+							v = UnsafeReflect.field(value, field);
+
+						if(v == null)
+							error(EInvalidAccess(field, c));
+						value = v;
+					}
+					variables.set(varName, value);
+					return value; // If someone wants to import and use the value as a return, they can
+				}
+
+				if (importFailedCallback == null || !importFailedCallback(c.split("."))) // Incase of custom import
+					error(EInvalidClass(c));
 				return null;
 
 			case EConst(c):

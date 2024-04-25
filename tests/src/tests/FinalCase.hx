@@ -6,14 +6,16 @@ class FinalCase extends TestCase {
 	}
 
 	override function getNewInterp() {
+		Util.defaultImport = false;
 		var interp = super.getNewInterp();
-		interp.variables.set("Std", Std);
-		interp.variables.set("String", String);
-		interp.variables.set("Bool", Bool);
-		interp.variables.set("Float", Float);
-		interp.variables.set("Array", Array);
-		interp.variables.set("Int", Int);
-		interp.variables.set("IntIterator", IntIterator);
+		Util.defaultImport = true;
+		//interp.variables.set("Std", Std);
+		//interp.variables.set("String", String);
+		//interp.variables.set("Bool", Bool);
+		//interp.variables.set("Float", Float);
+		//interp.variables.set("Array", Array);
+		//interp.variables.set("Int", Int);
+		//interp.variables.set("IntIterator", IntIterator);
 		return interp;
 	}
 
@@ -85,7 +87,40 @@ class FinalCase extends TestCase {
 		assertEq("[0=>'hello', 1=>'world'][1]", [0=>'hello', 1=>'world'][1]);
 		assertEq("[0=>'hello', 5=>'world'][1]", [0=>'hello', 5=>'world'][1]);
 
+		assertEq("
+		import tests.FinalCase;
+
+		FinalCase.test1();
+		", FinalCase.test1());
+
+		assertEq("
+		import tests.FinalCase as FC;
+
+		FC.test1();
+		", FinalCase.test1());
+
+		assertEq("
+		import tests.FinalCase as FC;
+		import tests.FinalCase.test;
+
+		FC.test1() + test();
+		", FinalCase.test1() + test());
+
+		assertEq("
+		//import Std.isOfType;
+
+		Std.isOfType('', String);
+		", Std.isOfType('', String));
+
 		// Test EOF with preprocessor
+	}
+
+	static function test1() {
+		return "hello";
+	}
+
+	static function test() {
+		return "world";
 	}
 
 	function assertDisplay(script:String, expected:Dynamic) {
