@@ -2035,6 +2035,12 @@ class Parser {
 		return TConst( CString(b.toString()) );
 	}
 
+	function peekToken():Token {
+		var t = token();
+		push(t);
+		return t;
+	}
+
 	function token(/*?infos : Null<haxe.PosInfos>*/) {
 		//function ttrace(v:Dynamic, ?infos : Null<haxe.PosInfos>) {
 		//	Sys.print(infos.fileName+":"+infos.lineNumber+": " + Std.string(v));
@@ -2042,6 +2048,7 @@ class Parser {
 		//}
 
 		#if hscriptPos
+		// Maybe have if( tokens.isEmpty() )
 		var t = tokens.pop();
 		if( t != null ) {
 			tokenMin = t.min;

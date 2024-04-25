@@ -28,6 +28,7 @@ class SwitchCase extends TestCase {
 
 		Util.runKnownBug("Switch statement with multiple cases in parentheses", () -> {
 			assertEq("switch(5) { case (1|4): 'error'; default: -1; }", switch(5) { case (1|4): 'error'; default: -1; });
+			assertEq("switch(6) { case (1|4|(6|7)): 6; default: -1; }", switch(6) { case (1|4|(6|7)): 6; default: -1; });
 		});
 	}
 
