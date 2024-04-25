@@ -150,6 +150,9 @@ class StringCase extends TestCase {
 		assertEq("'$a+5 Hello ${a+5}'", '$a+5 Hello ${a+5}');
 		//assertEq("'$a+5 Hello ${a+5}'", "" + a + "+5 Hello " + a + 5);
 		headerCode = '';
+
+		assertEq("'hello ${5} world'", 'hello ${5} world');
+		assertEq("'hello ${5}'", 'hello ${5}');
 	}
 
 	override function teardown() {

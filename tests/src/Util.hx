@@ -15,6 +15,10 @@ class Util {
 			return false;
 		}
 
+		if ((a is String) && (b is String)) {
+			return a == b;
+		}
+
 		if ((a is Array) && (b is Array)) {
 			var aArray:Array<Dynamic> = cast a;
 			var bArray:Array<Dynamic> = cast b;

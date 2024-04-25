@@ -2006,11 +2006,9 @@ class Parser {
 					if(valid) {
 						if(interpString == null)
 							interpString = [];
-						if(interpString.length > 0) { // store the current string
-							if(b.length > 0)
-								interpString.push(getTokenList(TConst(CString(b.toString()))));
-							b = new StringBuf();
-						}
+						if(b.length > 0) // store the current string
+							interpString.push(getTokenList(TConst(CString(b.toString()))));
+						b = new StringBuf();
 						interpolation = true;
 					} else {
 						b.addChar(c);
