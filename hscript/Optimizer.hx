@@ -83,9 +83,9 @@ class Optimizer {
 						return mk(EParent(e2), s);
 					}
 				}
-				if(isConstant(e1) && isConstant(e2)) {
-					var c1 = getConstant(e1);
-					var c2 = getConstant(e2);
+				if(isBool(e1) && isBool(e2)) {
+					var c1 = getBool(e1);
+					var c2 = getBool(e2);
 
 					if(c1 == false && c2 == true) { // (VAR ? false : true)
 						return optimize(mk(EUnop("!", true, econd), s));
@@ -356,6 +356,14 @@ class Optimizer {
 		}
 	}
 
+	static function isBool(e:Expr):Bool {
+		return switch(Tools.expr(e)) {
+			case EIdent("true") | EIdent("false"): true;
+			case EParent(e): isBool(e);
+			default: false;
+		}
+	}
+
 	static function isNumber(e:Expr):Bool {
 		return switch(Tools.expr(e)) {
 			case EConst(CInt(_)): true;
@@ -370,6 +378,15 @@ class Optimizer {
 			case EConst(CInt(value)): value;
 			case EConst(CFloat(value)): value;
 			case EParent(e): getNumber(e);
+			default: throw "Unknown type " + Tools.expr(e);
+		}
+	}
+
+	static function getBool(e:Expr):Bool {
+		return switch(Tools.expr(e)) {
+			case EIdent("true"): true;
+			case EIdent("false"): true;
+			case EParent(e): getBool(e);
 			default: throw "Unknown type " + Tools.expr(e);
 		}
 	}

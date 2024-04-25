@@ -52,6 +52,9 @@ class FinalCase extends TestCase {
 		assertEq("TestEnum.C(1, 2)", TestEnum.C(1, 2));
 		assertEq("TestEnum.D(1, 2, 3)", TestEnum.D(1, 2, 3));
 
+		Util.parse('test ? 0xFF343434 : 0xFF92A2FF');
+		Util.parse('test ? 1 : 0.75;');
+
 		// Test EOF with preprocessor
 	}
 
