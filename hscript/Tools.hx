@@ -68,10 +68,10 @@ class Tools {
 	public static function map( e : Expr, f : Expr -> Expr ) {
 		var edef = switch( expr(e) ) {
 		case EConst(_), EIdent(_), EBreak, EContinue: expr(e);
-		case EVar(n, t, e): EVar(n, t, if( e != null ) f(e) else null);
-		case EParent(e): EParent(f(e));
+		case EVar(n, t, e, p, s): EVar(n, t, if( e != null ) f(e) else null, p, s);
+		case EParent(e, no): EParent(f(e), no);
 		case EBlock(el): EBlock([for( e in el ) f(e)]);
-		case EField(e, fi): EField(f(e),fi);
+		case EField(e, fi, s): EField(f(e),fi,s);
 		case EBinop(op, e1, e2): EBinop(op, f(e1), f(e2));
 		case EUnop(op, pre, e): EUnop(op, pre, f(e));
 		case ECall(e, args): ECall(f(e),[for( a in args ) f(a)]);
@@ -80,7 +80,7 @@ class Tools {
 		case EDoWhile(c, e): EDoWhile(f(c),f(e));
 		case EFor(v, it, e): EFor(v, f(it), f(e));
 		case EForKeyValue(v, it, e, ithv): EForKeyValue(v, f(it), f(e), ithv);
-		case EFunction(args, e, name, t): EFunction(args, f(e), name, t);
+		case EFunction(args, e, name, t, p, s, o): EFunction(args, f(e), name, t, p, s, o);
 		case EReturn(e): EReturn(if( e != null ) f(e) else null);
 		case EArray(e, i): EArray(f(e),f(i));
 		case EMapDecl(type, keys, values): EMapDecl(type, [for( e in keys ) f(e)], [for( e in values ) f(e)]);
@@ -93,7 +93,7 @@ class Tools {
 		case ESwitch(e, cases, def): ESwitch(f(e), [for( c in cases ) new SwitchCase([for( v in c.values ) f(v)], f(c.expr))], def == null ? null : f(def));
 		case EMeta(name, args, e): EMeta(name, args == null ? null : [for( a in args ) f(a)], f(e));
 		case ECheckType(e,t): ECheckType(f(e), t);
-		case EImport(c, as, f): EImport(c, as, f);
+		case EImport(c, m): EImport(c, m);
 		case EClass(name, el, extend, interfaces): EClass(name, [for( e in el ) f(e)], extend, interfaces);
 		}
 		return mk(edef, e);
