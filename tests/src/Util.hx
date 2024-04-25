@@ -274,9 +274,13 @@ class Util {
 	}
 
 	public static function errorHandler(error:hscript.Error) {
+		#if hscriptPos
 		var fileName = error.origin;
 		var fn = '$fileName:${error.line}: ';
-		var err = error.toString();
+		#else
+		var fn = '';
+		#end
+		var err = Std.string(error);
 		if (err.startsWith(fn)) err = err.substr(fn.length);
 
 		Sys.println("ERROR: " + fn + err);

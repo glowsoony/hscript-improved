@@ -37,9 +37,9 @@ typedef StoredToken = Token;
 #if hscriptPos
 typedef TokenList = List<StoredToken>;
 #elseif haxe3
-typedef TokenList = haxe.ds.GenericStack<Token>;
+typedef TokenList = List<StoredToken>;
 #else
-typedef TokenList = haxe.FastList<Token>;
+typedef TokenList = haxe.FastList<StoredToken>;
 #end
 
 enum Token {
@@ -172,7 +172,7 @@ class Parser {
 		#end
 	}
 
-	public inline function error( err, pmin, pmax ) {
+	public inline function error( err: Error, pmin: Int, pmax: Int ) {
 		if( !resumeErrors )
 		#if hscriptPos
 		throw new Error(err, pmin, pmax, origin, line);
@@ -193,11 +193,11 @@ class Parser {
 		readPos = 0;
 		tokenMin = oldTokenMin = 0;
 		tokenMax = oldTokenMax = 0;
-		tokens = new List();
+		tokens = new List<StoredToken>();
 		#elseif haxe3
-		tokens = new haxe.ds.GenericStack<Token>();
+		tokens = new List<StoredToken>();
 		#else
-		tokens = new haxe.FastList<Token>();
+		tokens = new haxe.FastList<StoredToken>();
 		#end
 		char = -1;
 		ops = new Array();
@@ -398,22 +398,28 @@ class Parser {
 
 	function parseExprFromTokens(t:TokenList) {
 		var oldPos = readPos;
+		#if hscriptPos
 		var oldTokenMin = tokenMin;
 		var oldTokenMax = tokenMax;
+		#end
 		var oldTokens = tokens;
 
 		tokens = t;
 		// unsure about these
+		#if hscriptPos
 		tokenMin = 0;
 		tokenMax = t.length - 1;
+		#end
 		readPos = 0;
 		//trace(t.map(getTk).map(tokenString));
 
 		var e = parseExpr();
 
 		tokens = oldTokens;
+		#if hscriptPos
 		tokenMin = oldTokenMin;
 		tokenMax = oldTokenMax;
+		#end
 		readPos = oldPos;
 		return e;
 	}

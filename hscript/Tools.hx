@@ -93,7 +93,7 @@ class Tools {
 		case ESwitch(e, cases, def): ESwitch(f(e), [for( c in cases ) new SwitchCase([for( v in c.values ) f(v)], f(c.expr))], def == null ? null : f(def));
 		case EMeta(name, args, e): EMeta(name, args == null ? null : [for( a in args ) f(a)], f(e));
 		case ECheckType(e,t): ECheckType(f(e), t);
-		case EImport(c): EImport(c);
+		case EImport(c, as): EImport(c, as);
 		case EClass(name, el, extend, interfaces): EClass(name, [for( e in el ) f(e)], extend, interfaces);
 		}
 		return mk(edef, e);
