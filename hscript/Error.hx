@@ -51,6 +51,7 @@ enum Error
 	EInvalidPreprocessor( msg : String );
 	EUnknownVariable( v : String );
 	EInvalidIterator( v : String );
+	EInvalidType( t : String );
 	EInvalidOp( op : String );
 	EInvalidAccess( f : String );
 	ECustom( msg : String );

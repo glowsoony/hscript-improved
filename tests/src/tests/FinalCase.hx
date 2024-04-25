@@ -83,6 +83,7 @@ class FinalCase extends TestCase {
 
 		assertEq("[0=>'hello', 1=>'world']", [0=>'hello', 1=>'world']);
 		assertEq("[0=>'hello', 1=>'world'][1]", [0=>'hello', 1=>'world'][1]);
+		assertEq("[0=>'hello', 5=>'world'][1]", [0=>'hello', 5=>'world'][1]);
 
 		// Test EOF with preprocessor
 	}

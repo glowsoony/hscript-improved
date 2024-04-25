@@ -159,6 +159,7 @@ class Interp {
 		variables.set("true", true);
 		variables.set("false", false);
 		#if !NO_FROM_CHAR_CODE_FIX
+		// DONT CALL THIS DIRECTLY, USE String.fromCharCode, the preprocessor will call it for you
 		variables.set("__StringWorkaround__fromCharCode", function(a:Int) { // TODO: make hscript only add this if its used
 			return String.fromCharCode(a);
 		});

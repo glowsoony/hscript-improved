@@ -6,6 +6,8 @@ import hscript.Parser;
 
 @:access(hscript.Parser)
 class Optimizer {
+	static inline function expr(e:Expr) return Tools.expr(e);
+
 	public static function optimize(s:Expr):Expr {
 		if(s == null)
 			return null;
@@ -54,8 +56,8 @@ class Optimizer {
 				var econd = optimize(econd);
 				var e1 = optimize(e1);
 				var e2 = optimize(e2);
-				if(isConstant(econd)) {
-					var econd = getConstant(econd);
+				if(isBool(econd)) {
+					var econd = getBool(econd);
 					if(econd == true) {
 						if(e1 == null)
 							return mk(EBlock([]), s);
@@ -64,6 +66,27 @@ class Optimizer {
 						if(e2 == null)
 							return mk(EBlock([]), s);
 						return mk(EBlock([e2]), s);
+					}
+				}
+				if(e2 != null && isBool(e1) && isBool(e2)) {
+					var c1 = getBool(e1);
+					var c2 = getBool(e2);
+
+					if(c1 == false && c2 == true) { // (VAR ? false : true)
+						return optimize(mk(EUnop("!", true, econd), s));
+					}
+					if(c1 == true && c2 == false) { // (VAR ? true : false)
+						return optimize(mk(Tools.expr(econd), s));
+					}
+					if(isConstant(econd)) { // Side effect free
+						if(c1 == true && c2 == true) { // (CONST ? true : true)
+							return mk(convertConstant(true), s);
+						}
+						if(c1 == false && c2 == false) { // (CONST ? false : false)
+							return mk(convertConstant(false), s);
+						}
+						// TODO: Check if local variables are used in the condition
+						// Since they cant have side effects, they can be optimized
 					}
 				}
 				return mk(EIf(econd, e1, e2), s);
@@ -94,7 +117,7 @@ class Optimizer {
 					if(c1 == true && c2 == false) { // (VAR ? true : false)
 						return optimize(mk(Tools.expr(econd), s));
 					}
-					if(isConstant(econd)) {
+					if(isConstant(econd)) { // Side effect free
 						if(c1 == true && c2 == true) { // (CONST ? true : true)
 							return mk(convertConstant(true), s);
 						}
@@ -146,23 +169,86 @@ class Optimizer {
 			case ECall(e, params):
 				e = optimize(e);
 				params = params.map((v) -> optimize(v));
-				if(params.length == 0) {
-					switch(Tools.expr(e)) {
-						case EField(fc, "toUpperCase", _):
-							var str = getStringConstant(fc);
-							if(str != null)
-								return mk(convertConstant(str.toUpperCase()), s);
-						case EField(fc, "toLowerCase", _):
-							var str = getStringConstant(fc);
-							if(str != null)
-								return mk(convertConstant(str.toLowerCase()), s);
-						default:
+
+				function p(i:Int, t:ConstType, opt:Bool = false):Dynamic {
+					var p = params[i];
+					if(t != getConstType(p))
+						if(opt)
+							return null;
+						else
+							throw Parser.getBaseError(EInvalidType(getTypeName(p)));
+					return switch(t) {
+						case CTInt: getInt(p);
+						case CTFloat: getFloat(p);
+						case CTBool: getBool(p);
+						case CTString: getStringConstant(p);
+						case CTNull: null;
 					}
+				}
+
+				switch(Tools.expr(e)) {
+					case EField(expr(_) => EConst(CString(str)), field):
+						switch(field) {
+							case "toString":
+								if(params.length != 0) throw Parser.getBaseError(ECustom("String.toString() takes no arguments"));
+								return mk(convertConstant(str.toString()), s);
+
+							case "toUpperCase":
+								if(params.length != 0) throw Parser.getBaseError(ECustom("String.toUpperCase() takes no arguments"));
+								return mk(convertConstant(str.toUpperCase()), s);
+
+							case "toLowerCase":
+								if(params.length != 0) throw Parser.getBaseError(ECustom("String.toLowerCase() takes no arguments"));
+								return mk(convertConstant(str.toLowerCase()), s);
+
+							case "charAt":
+								var index = p(0, CTInt);
+								return mk(convertConstant(str.charAt(index)), s);
+
+							case "charCodeAt":
+								var index = p(0, CTInt);
+								return mk(convertConstant(str.charCodeAt(index)), s);
+
+							case "indexOf":
+								var value = p(0, CTString);
+								var startIndex = p(1, CTInt, true);
+								return mk(convertConstant(str.indexOf(value, startIndex)), s);
+
+							case "lastIndexOf":
+								var value = p(0, CTString);
+								var startIndex = p(1, CTInt, true);
+								return mk(convertConstant(str.lastIndexOf(value, startIndex)), s);
+
+							case "split":
+								var delimiter = p(0, CTString);
+								var strArr = str == "" ? [] : str.split(delimiter); // fix platform dependent behavior
+								return mk(EArrayDecl([for(st in strArr) mk(EConst(CString(st)), s)]), s);
+
+							case "substr":
+								var pos = p(0, CTInt);
+								var len = p(1, CTInt, true);
+								return mk(convertConstant(str.substr(pos, len)), s);
+
+							case "substring":
+								var startIndex = p(0, CTInt);
+								var endIndex = p(1, CTInt, true);
+								return mk(convertConstant(str.substring(startIndex, endIndex)), s);
+						}
+						default:
+				}
+				switch(Tools.expr(e)) {
+
+					default:
 				}
 				return mk(ECall(e, params), s);
 
 			case EField(e, f, safe):
 				e = optimize(e);
+				switch(Tools.expr(e)) {
+					case EConst(CString(str)) if(f == "length"):
+						return mk(convertConstant(str.length), s);
+					default:
+				}
 				return mk(EField(e, f, safe), s);
 
 			case EIdent(_) | EConst(_):
@@ -226,6 +312,7 @@ class Optimizer {
 						}
 					}
 
+					// Maybe convert this to a Lambda.foreach?
 					var isAllCasesConstant = true;
 					for(c in cases) {
 						for(v in c.values) {
@@ -268,19 +355,23 @@ class Optimizer {
 						};
 
 						var constant = Lambda.exists(arr, isConstant);
-						if(constant) {
-							return mk(Tools.expr(arr[getConstant(index)]), s);
+						var index = getInt(index);
+						if(constant && index != null) {
+							return mk(Tools.expr(arr[index]), s);
 						}
 					}
 					if(Tools.expr(e).match(EMapDecl(_))) {
 						var map = switch(Tools.expr(e)) {
-							case EMapDecl(type, keys, vals): [keys, vals];
+							case EMapDecl(type, keys, vals): [for(i in 0...keys.length) [keys[i], vals[i]]];
 							default: null;
 						};
 
 						var constant = Lambda.exists(map, (v) -> isConstant(v[0]) && isConstant(v[1]));
 						if(constant) {
-							return mk(Tools.expr(map[getConstant(index)][1]), s);
+							var idx = Lambda.findIndex(map, (v) -> Type.enumEq(Tools.expr(v[0]), Tools.expr(index)));
+							if(idx == -1)
+								return mk(EIdent("null"), s);
+							return mk(Tools.expr(map[idx][1]), s);
 						}
 					}
 				}
@@ -301,6 +392,8 @@ class Optimizer {
 					var c1 = getNumber(e1);
 					if(compareNumber(c1, 0) && op == "+")
 						return mk(Tools.expr(e2), s);
+					if(compareNumber(c1, 1) && op == "*")
+						return mk(Tools.expr(e2), s);
 					//if(compareNumber(c1, 0) && op == "*")
 					//	return mk(convertConstant(0), s);
 				}
@@ -310,6 +403,8 @@ class Optimizer {
 					if(op == "+" && compareNumber(c2, 0))
 						return mk(Tools.expr(e1), s);
 					if(op == "/" && compareNumber(c2, 1))
+						return mk(Tools.expr(e1), s);
+					if(op == "*" && compareNumber(c2, 1))
 						return mk(Tools.expr(e1), s);
 					//if(op == "*" && compareNumber(c2, 0))
 					//	return mk(convertConstant(0), s);
@@ -366,6 +461,35 @@ class Optimizer {
 		}
 	}
 
+	static function getTypeName(e:Expr):String {
+		if(e == null)
+			return null;
+		return switch(Tools.expr(e)) {
+			case EConst(CInt(_)): "Int";
+			case EConst(CFloat(_)): "Float";
+			case EConst(CString(_)): "String";
+			case EIdent("true") | EIdent("false"): "Bool";
+			case EIdent("null"): "Null";
+			case EIdent(_): "Dynamic";
+			case EParent(e): getTypeName(e);
+			default: Std.string(Tools.expr(e));
+		}
+	}
+
+	static function getConstType(e:Expr):ConstType {
+		if(e == null)
+			return null;
+		return switch(Tools.expr(e)) {
+			case EConst(CInt(_)): CTInt;
+			case EConst(CFloat(_)): CTFloat;
+			case EConst(CString(_)): CTString;
+			case EIdent("true") | EIdent("false"): CTBool;
+			case EIdent("null"): CTNull;
+			case EParent(e): getConstType(e);
+			default: throw "Unknown type " + Tools.expr(e);
+		}
+	}
+
 	static function isConstant(e:Expr):Bool {
 		return switch(Tools.expr(e)) {
 			case EIdent("true") | EIdent("false") | EIdent("null"): true;
@@ -404,15 +528,44 @@ class Optimizer {
 	static function getBool(e:Expr):Bool {
 		return switch(Tools.expr(e)) {
 			case EIdent("true"): true;
-			case EIdent("false"): true;
+			case EIdent("false"): false;
 			case EParent(e): getBool(e);
 			default: throw "Unknown type " + Tools.expr(e);
+		}
+	}
+
+	static function getInt(e:Expr):Null<Int> {
+		if(e == null)
+			return null;
+		return switch(Tools.expr(e)) {
+			case EConst(CInt(value)): value;
+			case EParent(e): getInt(e);
+			default: null;
+		}
+	}
+
+	static function getFloat(e:Expr):Null<Float> {
+		if(e == null)
+			return null;
+		return switch(Tools.expr(e)) {
+			case EConst(CFloat(value)): value;
+			case EParent(e): getFloat(e);
+			default: null;
+		}
+	}
+
+	static function isString(e:Expr):Bool {
+		return switch(Tools.expr(e)) {
+			case EConst(CString(_)): true;
+			case EParent(e): isString(e);
+			default: false;
 		}
 	}
 
 	static function getStringConstant(e:Expr):String {
 		return switch(Tools.expr(e)) {
 			case EConst(CString(value)): value;
+			case EParent(e): getStringConstant(e);
 			default: null;
 		}
 	}
@@ -476,4 +629,12 @@ class Optimizer {
 			default: null;
 		}
 	}
+}
+
+enum ConstType {
+	CTInt;
+	CTFloat;
+	CTBool;
+	CTString;
+	CTNull;
 }

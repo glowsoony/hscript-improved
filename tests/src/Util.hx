@@ -37,10 +37,10 @@ class Util {
 				var b_args = EnumValueTools.getParameters(cast b);
 				return deepEqual(a_args, b_args);
 			case TClass(_):
-				if (Std.isOfType(a, String) && Std.isOfType(b, String)) {
+				if ((a is String) && (b is String)) {
 					return a == b;
 				}
-				if (Std.isOfType(a, Array) && Std.isOfType(b, Array)) {
+				if ((a is Array) && (b is Array)) {
 					var a = cast(a, Array<Dynamic>);
 					var b = cast(b, Array<Dynamic>);
 					if (a.length != b.length) { return false; }
@@ -52,9 +52,9 @@ class Util {
 					return true;
 				}
 
-				if (Std.isOfType(a, IMap) && Std.isOfType(b, IMap)) {
-					var a = cast(a, Map<Dynamic, Dynamic>);
-					var b = cast(b, Map<Dynamic, Dynamic>);
+				if ((a is IMap) && (b is IMap)) {
+					var a = cast(a, IMap<Dynamic, Dynamic>);
+					var b = cast(b, IMap<Dynamic, Dynamic>);
 					var a_keys = [ for (key in a.keys()) key ];
 					var b_keys = [ for (key in b.keys()) key ];
 					a_keys.sort(Reflect.compare);
@@ -68,11 +68,11 @@ class Util {
 					return true;
 				}
 
-				if (Std.isOfType(a, Date) && Std.isOfType(b, Date)) {
+				if ((a is Date) && (b is Date)) {
 					return cast(a, Date).getTime() == cast(b, Date).getTime();
 				}
 
-				if (Std.isOfType(a, haxe.io.Bytes) && Std.isOfType(b, haxe.io.Bytes)) {
+				if ((a is haxe.io.Bytes) && (b is haxe.io.Bytes)) {
 					return deepEqual(cast(a, haxe.io.Bytes).getData(), cast(b, haxe.io.Bytes).getData());
 				}
 

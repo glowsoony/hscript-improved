@@ -151,15 +151,27 @@ class StringCase extends TestCase {
 		assertEq('String.fromCharCode(101)', String.fromCharCode(101));
 		assertEq('String.fromCharCode(102)', String.fromCharCode(102));
 		assertEq('String.fromCharCode(103)', String.fromCharCode(103));
-		assertEq('var a = 103; String.fromCharCode(a)', String.fromCharCode(test));
+		assertEq('var a = 103; String.fromCharCode(a)', String.fromCharCode(a));
 
 		assertError("'hello ${}'", Parser.getBaseError(EPreset(EMPTY_INTERPOLATION)));
-	}
 
-	static var test = 103;
+		assertEq('"".charAt(0)', "".charAt(0));
+		assertEq('"".charAt(1)', "".charAt(1));
+		assertEq('"".charAt(-1)', "".charAt(-1));
 
-	static function fromCharCode(a:Int) {
-		return String.fromCharCode(a);
+		headerCode = '';
+
+		assertEq("'foo1bar'.charCodeAt(0)", 'foo1bar'.charCodeAt(0));
+		assertEq("'foo1bar'.charCodeAt(1)", 'foo1bar'.charCodeAt(1));
+		assertEq("'foo1bar'.charCodeAt(2)", 'foo1bar'.charCodeAt(2));
+		assertEq("'foo1bar'.charCodeAt(3)", 'foo1bar'.charCodeAt(3));
+		assertEq("'foo1bar'.charCodeAt(4)", 'foo1bar'.charCodeAt(4));
+		assertEq("'foo1bar'.charCodeAt(5)", 'foo1bar'.charCodeAt(5));
+		assertEq("'foo1bar'.charCodeAt(6)", 'foo1bar'.charCodeAt(6));
+		assertEq("'foo1bar'.charCodeAt(7)", 'foo1bar'.charCodeAt(7));
+		assertEq("'foo1bar'.charCodeAt(-1)", 'foo1bar'.charCodeAt(-1));
+		assertEq("'foo1bar'.length", 'foo1bar'.length);
+		assertEq("'foo1bar'.split('1')", 'foo1bar'.split('1'));
 	}
 
 	override function teardown() {
