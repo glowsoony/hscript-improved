@@ -172,7 +172,7 @@ class Parser {
 		#end
 	}
 
-	public inline function error( err: Error, pmin: Int, pmax: Int ) {
+	public inline function error( err: #if hscriptPos Error.ErrorDef #else Error #end, pmin: Int, pmax: Int ) {
 		if( !resumeErrors )
 		#if hscriptPos
 		throw new Error(err, pmin, pmax, origin, line);
@@ -1069,7 +1069,7 @@ class Parser {
 					}
 				case TId(id):
 					var path = [id];
-					var asname:String = null;
+					var as:String = null;
 					var t = null;
 					while( true ) {
 						t = token();
@@ -1078,7 +1078,7 @@ class Parser {
 								t = token();
 								switch( t ) {
 									case TId(id):
-										asname = id;
+										as = id;
 									default:
 										unexpected(t);
 								}
@@ -1099,7 +1099,7 @@ class Parser {
 					ensure(TSemicolon);
 					push(TSemicolon);
 					var p = path.join(".");
-					mk(EImport(p, asname),p1);
+					mk(EImport(p, as),p1);
 				default:
 					unexpected(tk);
 					null;
