@@ -7,11 +7,11 @@ using StringTools;
 
 class Util {
 	static inline function isNull(a:Dynamic):Bool {
-		return Type.typeof(a) == TNull;
+		return Type.enumEq(Type.typeof(a), TNull);
 	}
 
 	static inline function isFunction(a:Dynamic):Bool {
-		return Type.typeof(a) == TFunction;
+		return Type.enumEq(Type.typeof(a), TFunction);
 	}
 
 	// TODO: check this for bugs
