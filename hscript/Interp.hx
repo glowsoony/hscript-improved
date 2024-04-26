@@ -575,9 +575,10 @@ class Interp {
 				var splitClassName:Array<String> = c.split(".");
 				if (splitClassName.length <= 0) return null;
 
+				var lastName:String = splitClassName[splitClassName.length-1];
 				var varName:String = switch(mode) {
 					case IAs(name): name;
-					default: splitClassName[splitClassName.length-1];
+					default: lastName;
 				};
 
 				// Class is already imported
@@ -596,15 +597,10 @@ class Interp {
 				}
 
 				// Allow for Std.isOfType;
-				var importField:String = null;
+				var isField:Bool = false;
 				if (importedClass == null) {
-					var newClassName:Array<String> = splitClassName.copy();
-
-					importField = newClassName.pop();
-					if(variables.exists(importField))
-						return variables.get(importField);
-
-					importedClass = getClass(newClassName.join("."));
+					importedClass = getClass(c.substring(0, c.lastIndexOf(".")));
+					isField = true;
 				}
 
 				// Import the .isOfType
@@ -613,19 +609,13 @@ class Interp {
 						case Left(e): e;
 						case Right(e): Tools.getEnum(e);
 					};
-					if(importField != null) {
-						var v:Dynamic   = UnsafeReflect.getProperty(classOrEnum, importField);
-						if(v == null) v = UnsafeReflect.field(classOrEnum, importField);
+					if(isField) {
+						var v:Dynamic   = UnsafeReflect.getProperty(classOrEnum, lastName);
+						if(v == null) v = UnsafeReflect.field(classOrEnum, lastName);
+						if(v == null) error(EInvalidAccess(lastName, c));
 
-						if(v == null)
-							error(EInvalidAccess(importField, c));
-						classOrEnum = v;
-
-						variables.set(switch(mode) {
-							case IAs(name): name;
-							default: importField;
-						}, classOrEnum);
-						return classOrEnum;
+						variables.set(varName, v);
+						return v;
 					}
 
 					variables.set(varName, classOrEnum);
