@@ -113,6 +113,12 @@ class FinalCase extends TestCase {
 		", Std.isOfType('', String));
 
 		assertEq("
+		import Std.isOfType;
+
+		isOfType('', String);
+		", Std.isOfType('', String));
+
+		assertEq("
 		import Math.round as F;
 		F(2.9);", Math.round(2.9));
 

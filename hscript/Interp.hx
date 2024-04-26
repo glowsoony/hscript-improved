@@ -574,7 +574,7 @@ class Interp {
 
 				var splitClassName:Array<String> = c.split(".");
 				if (splitClassName.length <= 0) return null;
-				
+
 				var varName:String = switch(mode) {
 					case IAs(name): name;
 					default: splitClassName[splitClassName.length-1];
@@ -601,6 +601,9 @@ class Interp {
 					var newClassName:Array<String> = splitClassName.copy();
 
 					importField = newClassName.pop();
+					if(variables.exists(importField))
+						return variables.get(importField);
+
 					importedClass = getClass(newClassName.join("."));
 				}
 
@@ -611,8 +614,7 @@ class Interp {
 						case Right(e): Tools.getEnum(e);
 					};
 					if(importField != null) {
-						var v:Dynamic = null;
-						if(v == null) v = UnsafeReflect.getProperty(classOrEnum, importField);
+						var v:Dynamic   = UnsafeReflect.getProperty(classOrEnum, importField);
 						if(v == null) v = UnsafeReflect.field(classOrEnum, importField);
 
 						if(v == null)
