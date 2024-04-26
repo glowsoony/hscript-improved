@@ -126,6 +126,8 @@ class FinalCase extends TestCase {
 		import Math.round;
 		round(1.9);", Math.round(1.9));
 
+		trace(Type.resolveClass("hscript._Error.ErrorMessage_Impl_"));
+
 		// Test EOF with preprocessor
 	}
 

@@ -40,6 +40,7 @@ class Main {
 		// TODO: UnicodeCase.hx?
 		// TODO: UnicodeStringCase.hx?
 		runTest("Final", new FinalCase());
+		runTest("Abstract", new AbstractCase());
 		Util.printTestResults();
 		#end
 	}

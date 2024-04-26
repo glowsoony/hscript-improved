@@ -25,10 +25,11 @@ class Utils {
 		return type;
 	}
 
-	public static function setupMetas(shadowClass:TypeDefinition, imports) {
+	public static function setupMetas(shadowClass:TypeDefinition, imports:Array<ImportExpr>, doImports:Bool = true) {
 		shadowClass.meta = [];
 		shadowClass.meta.push({name: ":dox", params: [macro hide], pos: Context.currentPos()});
 		shadowClass.meta.push({name: ":noCompletion", params: [], pos: Context.currentPos()});
+		if(!doImports) return;
 		var module = Context.getModule(Context.getLocalModule());
 		for(t in module) {
 			switch(t) {
