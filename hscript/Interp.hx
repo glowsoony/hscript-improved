@@ -565,68 +565,76 @@ class Interp {
 				}
 				customClasses.set(name, new CustomClassHandler(this, name, fields, importVar(extend), [for (i in interfaces) importVar(i)]));
 			case EImport(c, mode):
-				if (!importEnabled)
-					return null;
+				if (!importEnabled) return null;
 
 				if(mode == IAll) {
 					throw "TODO";
 					return null;
 				}
 
-				var splitClassName = c.split(".");
-				var origSplitClassName = splitClassName.copy();
-				var field = null;
-
-				var varName = switch(mode) {
+				var splitClassName:Array<String> = c.split(".");
+				if (splitClassName.length <= 0) return null;
+				
+				var varName:String = switch(mode) {
 					case IAs(name): name;
-					default: splitClassName[splitClassName.length - 1];
-				}
+					default: splitClassName[splitClassName.length-1];
+				};
 
-				if (variables.exists(varName)) // class is already imported
+				// Class is already imported
+				if (variables.exists(varName))
 					return null;
 
-				var cl = getClass(c);
+				// Orginal class
+				var importedClass = getClass(c);
+				if (importedClass != null) {
+					variables.set(varName, importedClass);
+					return importedClass;
+				}
 
 				// Allow for flixel.ui.FlxBar.FlxBarFillDirection;
-				if(cl == null && origSplitClassName.length > 1) {
-					splitClassName = origSplitClassName.copy();
+				var newClassName:Array<String> = splitClassName.copy();
+				newClassName.splice(-2, 1); // Remove the last last item
 
-					splitClassName.splice(-2, 1); // Remove the last last item
-					cl = getClass(splitClassName.join("."));
+				importedClass = getClass(newClassName.join("."));
+				if (importedClass != null) {
+					variables.set(varName, importedClass);
+					return importedClass;
 				}
 
 				// Allow for Std.isOfType;
-				if(cl == null && origSplitClassName.length > 1) {
-					splitClassName = origSplitClassName.copy();
+				var importField:String = null;
+				var newClassName:Array<String> = splitClassName.copy();
 
-					field = splitClassName.pop();
-					cl = getClass(splitClassName.join("."));
-				}
+				importField = newClassName.pop();
+				importedClass = getClass(newClassName.join("."));
 
-				if (cl != null) {
-					var value:Dynamic = switch(cl) {
+				// Import the .isOfType
+				if (importedClass != null) {
+					var classOrEnum:Dynamic = switch(importedClass) {
 						case Left(e): e;
 						case Right(e): Tools.getEnum(e);
-					}
-					if(field != null) { // import Std.isOfType;
+					};
+					if(importField != null) {
 						var v:Dynamic = null;
-						if(v == null)
-							v = UnsafeReflect.getProperty(value, field);
-						if(v == null)
-							v = UnsafeReflect.field(value, field);
+						if(v == null) v = UnsafeReflect.getProperty(classOrEnum, importField);
+						if(v == null) v = UnsafeReflect.field(classOrEnum, importField);
 
 						if(v == null)
-							error(EInvalidAccess(field, c));
-						value = v;
+							error(EInvalidAccess(importField, c));
+						classOrEnum = v;
 					}
-					variables.set(varName, value);
-					return value; // If someone wants to import and use the value as a return, they can
+
+					variables.set(newClassName[newClassName.length-1], importedClass);
+					variables.set(switch(mode) {
+						case IAs(name): name;
+						default: importField;
+					}, classOrEnum);
+					return classOrEnum;
 				}
 
 				if (importFailedCallback == null || !importFailedCallback(c.split("."))) // Incase of custom import
 					error(EInvalidClass(c));
 				return null;
-
 			case EConst(c):
 				switch (c) {
 					case CInt(v): return v;
