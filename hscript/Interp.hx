@@ -582,31 +582,27 @@ class Interp {
 
 				// Class is already imported
 				if (variables.exists(varName))
-					return null;
+					return variables.get(varName);
 
 				// Orginal class
 				var importedClass = getClass(c);
-				if (importedClass != null) {
-					variables.set(varName, importedClass);
-					return importedClass;
-				}
 
 				// Allow for flixel.ui.FlxBar.FlxBarFillDirection;
-				var newClassName:Array<String> = splitClassName.copy();
-				newClassName.splice(-2, 1); // Remove the last last item
+				if (importedClass == null) {
+					var newClassName:Array<String> = splitClassName.copy();
+					newClassName.splice(-2, 1); // Remove the last last item
 
-				importedClass = getClass(newClassName.join("."));
-				if (importedClass != null) {
-					variables.set(varName, importedClass);
-					return importedClass;
+					importedClass = getClass(newClassName.join("."));
 				}
 
 				// Allow for Std.isOfType;
 				var importField:String = null;
-				var newClassName:Array<String> = splitClassName.copy();
+				if (importedClass == null) {
+					var newClassName:Array<String> = splitClassName.copy();
 
-				importField = newClassName.pop();
-				importedClass = getClass(newClassName.join("."));
+					importField = newClassName.pop();
+					importedClass = getClass(newClassName.join("."));
+				}
 
 				// Import the .isOfType
 				if (importedClass != null) {
@@ -622,13 +618,15 @@ class Interp {
 						if(v == null)
 							error(EInvalidAccess(importField, c));
 						classOrEnum = v;
+
+						variables.set(switch(mode) {
+							case IAs(name): name;
+							default: importField;
+						}, classOrEnum);
+						return classOrEnum;
 					}
 
-					variables.set(newClassName[newClassName.length-1], importedClass);
-					variables.set(switch(mode) {
-						case IAs(name): name;
-						default: importField;
-					}, classOrEnum);
+					variables.set(varName, classOrEnum);
 					return classOrEnum;
 				}
 
