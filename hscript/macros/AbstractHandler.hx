@@ -222,8 +222,8 @@ class AbstractHandler {
 					case FFun(fun):
 						if(fun.expr != null) {
 							var obj:Dynamic = {
-								n: f.name,
-								a: [for(a in fun.args) {
+								name: f.name,
+								args: [for(a in fun.args) {
 									//name: a.name,
 									//opt: a.opt,
 									//type: MacroPrinter.typeToString(a.type),
@@ -235,9 +235,9 @@ class AbstractHandler {
 									}
 									arg;
 								}].join("|"),
-								r: fun.ret,
+								ret: fun.ret,
 								//access: f.access.map(function(a) return Std.string(a)).join(","),
-								c: {
+								access: {
 									var special = 0;
 									var map:Array<Access> = [AStatic, APrivate, APublic, AOverride, AInline, ADynamic, AExtern, AStatic];
 									for(a in f.access) {
@@ -250,7 +250,7 @@ class AbstractHandler {
 									}
 									special;
 								},
-								s: {
+								special: {
 									var special = 0;//{arrayAccess: false, arrayWrite: false};
 									for(m in f.meta) {
 										if(m.name == ":arrayAccess") {
@@ -276,7 +276,7 @@ class AbstractHandler {
 									}
 									special;
 								},
-								o: {
+								op: {
 									var op = null;
 									//trace("");
 									//trace("");
@@ -337,33 +337,42 @@ class AbstractHandler {
 								}
 							}
 
-							if(obj.o == null) {
-								Reflect.deleteField(obj, "o");
+							if(obj.op == null) {
+								Reflect.deleteField(obj, "op");
 							}
 
-							if(obj.r == null && f.name.startsWith("get_")) {
+							if(obj.ret == null && f.name.startsWith("get_")) {
 								var v = getVarFromFields(fields, f.name.substr(4));
 								var type = getTypeFromField(v);
 								//Sys.println("getter " + f.name + " " + getResolvedType(type) + " " + type);
-								obj.r = type;
-							} else if(obj.r == null && f.name.startsWith("set_")) {
+								obj.ret = type;
+							} else if(obj.ret == null && f.name.startsWith("set_")) {
 								var v = getVarFromFields(fields, f.name.substr(4));
 								var type = getTypeFromField(v);
 								//Sys.println("setter " + f.name + " " + getResolvedType(type) + " " + type);
-								obj.r = type;
+								obj.ret = type;
 							} else {
-								if(obj.r != null) {
-									//Sys.println("normal field " + f.name + " " + getResolvedType(obj.r) + " " + obj.r);
+								if(obj.ret != null) {
+									//Sys.println("normal field " + f.name + " " + getResolvedType(obj.ret) + " " + obj.ret);
 								}
 							}
 
 							if(obj.name == "_new")
 								obj.name = "new";
 
-							obj.r = MacroPrinter.typeToString(obj.r);
+							obj.ret = MacroPrinter.typeToString(obj.ret);
 
 							trace("FFun", obj);
-							funcInfos.push(obj);
+							var save:Dynamic = null;
+							if(true) {
+								save = [obj.name, obj.args, obj.ret, obj.access, obj.special];
+								if(obj.op != null) {
+									save.push(obj.op);
+								}
+							} else {
+								save = obj;
+							}
+							funcInfos.push(save);
 							//trace(cl.name, obj);
 						}
 					default:
@@ -388,13 +397,16 @@ class AbstractHandler {
 			var imports = Context.getLocalImports().copy();
 			Utils.setupMetas(shadowClass, [], false);
 			//Utils.processImport(imports, "hscript.utils.UnsafeReflect", "UnsafeReflect");
-
+			trace(funcInfos);
 			shadowClass.fields.push({
 				name: "__abstract_helper",
 				pos: cl.pos,
 				access: [APublic, AStatic],
 				kind: FFun({
-					ret: TPath({name: 'Dynamic', pack: []}),
+					//ret: TPath({name: 'Dynamic', pack: []}),
+					ret: macro :{
+						funcs:Array<Dynamic>
+					},
 					params: [],
 					expr: macro {
 						return @:fixed {
