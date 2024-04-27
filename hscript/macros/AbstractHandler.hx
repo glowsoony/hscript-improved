@@ -28,12 +28,12 @@ class AbstractHandler {
 	}
 
 	static var abstracts = new Map<String, {
-		
+
 	}>();
 
-	static function finalizeAbstract(a:AbstractType) {
+	/*static function finalizeAbstract(a:AbstractType) {
 		var name = a.name;
-		if(name.endsWith(CLASS_SUFFIX)) return; // !name.endsWith("_Impl_") || 
+		if(name.endsWith(CLASS_SUFFIX)) return; // !name.endsWith("_Impl_") ||
 		if(name != "NodeListAccess") return;
 
 		Sys.println("");
@@ -48,11 +48,11 @@ class AbstractHandler {
 		Sys.println(MacroPrinter.convertAbstractTypeToString(a));
 
 		//trace("buildAbstract", a);
-	}
+	}*/
 
 	static var currentSelf = "";
 
-	static function oldTypeToString(t:Type, selfCheck:String = null):String {
+	/*static function oldTypeToString(t:Type, selfCheck:String = null):String {
 		var str = switch(t) {
 			case TInst(_.get() => t, params):
 				var str = "";
@@ -170,7 +170,7 @@ class AbstractHandler {
 		}
 
 		return MacroPrinter.typeToString(t);
-	}
+	}*/
 
 	public static function build():Array<Field> {
 		var fields = Context.getBuildFields();
@@ -222,16 +222,59 @@ class AbstractHandler {
 					case FFun(fun):
 						if(fun.expr != null) {
 							var obj:Dynamic = {
-								name: f.name,
-								args: [for(a in fun.args) {
-									name: a.name,
-									opt: a.opt,
-									type: getResolvedType(a.type),
+								n: f.name,
+								a: [for(a in fun.args) {
+									//name: a.name,
+									//opt: a.opt,
+									//type: MacroPrinter.typeToString(a.type),
 									//value: a.value,
 									//meta: a.meta,
-								}],
-								ret: fun.ret,
-								op: {
+									var arg = a.type == null ? "_" : MacroPrinter.typeToString(a.type);
+									if(a.opt) {
+										arg = "?" + arg;
+									}
+									arg;
+								}].join("|"),
+								r: fun.ret,
+								//access: f.access.map(function(a) return Std.string(a)).join(","),
+								c: {
+									var special = 0;
+									var map:Array<Access> = [AStatic, APrivate, APublic, AOverride, AInline, ADynamic, AExtern, AStatic];
+									for(a in f.access) {
+										var index = map.indexOf(a);
+										if(index == -1) {
+											trace("Unknown access " + a);
+											continue;
+										}
+										special |= 1 << index;
+									}
+									special;
+								},
+								s: {
+									var special = 0;//{arrayAccess: false, arrayWrite: false};
+									for(m in f.meta) {
+										if(m.name == ":arrayAccess") {
+											if(fun.args.length == 1) {
+												special |= 1;
+												//special.arrayAccess = true;
+											} else if(fun.args.length == 2) {
+												special |= 2;
+												//special.arrayWrite = true;
+											} else {
+												trace(f.pos);
+												throw "Unknown :arrayAccess meta " + fun.args;
+											}
+										} else if(m.name == ":from") {
+											//throw "Unknown :from meta " + m;
+											special |= 4;
+										} else if(m.name == ":to") {
+											//throw "Unknown :to meta " + m;
+											special |= 8;
+										}
+									}
+									special;
+								},
+								o: {
 									var op = null;
 									//trace("");
 									//trace("");
@@ -239,13 +282,22 @@ class AbstractHandler {
 									//trace(f.name, f.meta);
 									//trace(f.name, fun);
 									for(m in f.meta) {
+										if(m.name == ":resolve") {
+											if(f.access.contains(AStatic) && fun.args.length == 2) {
+												op = "a.b";
+											} else if(!f.access.contains(AStatic) && fun.args.length == 1) {
+												op = "a.b";
+											} else {
+												throw "Unknown :resolve meta " + fun.args;
+											}
+										}
 										if(m.name == ":op") {
 											switch (m.params[0].expr) {
-												case EField(_.expr => EConst(CIdent("a")), "b"):
+												case EField(_.expr => EConst(CIdent(_)), _):
 													op = "a.b";
 												case EArrayDecl([]):
 													op = "[]";
-												case EUnop(o, suffix, _.expr => EConst(CIdent("A"))):
+												case EUnop(o, suffix, _.expr => EConst(CIdent(_))):
 													var opStr = switch(o) {
 														case OpNeg: "-";
 														case OpIncrement: "++";
@@ -255,15 +307,15 @@ class AbstractHandler {
 														case OpSpread: "...";
 													}
 													if(suffix) {
-														op = "A" + opStr;
+														op = "a" + opStr;
 													} else {
-														op = opStr + "A";
+														op = opStr + "a";
 													}
-												case EBinop(o, _.expr => EConst(CIdent("A")), _.expr => EConst(CIdent("B"))):
+												case EBinop(o, _.expr => EConst(CIdent(_)), _.expr => EConst(CIdent(_))):
 													var opStr = getBinopStr(o);
-													op = "A " + opStr + " B";
+													op = "a " + opStr + " b";
 												#if (haxe >= "4.3.0")
-												case ECall(_.expr => EConst(CIdent("a")), []):
+												case ECall(_.expr => EConst(CIdent(_)), []):
 													op = "a()";
 												#end
 												default:
@@ -283,26 +335,26 @@ class AbstractHandler {
 								}
 							}
 
-							if(obj.ret == null && f.name.startsWith("get_")) {
+							if(obj.r == null && f.name.startsWith("get_")) {
 								var v = getVarFromFields(fields, f.name.substr(4));
 								var type = getTypeFromField(v);
 								//Sys.println("getter " + f.name + " " + getResolvedType(type) + " " + type);
-								obj.ret = type;
-							} else if(obj.ret == null && f.name.startsWith("set_")) {
+								obj.r = type;
+							} else if(obj.r == null && f.name.startsWith("set_")) {
 								var v = getVarFromFields(fields, f.name.substr(4));
 								var type = getTypeFromField(v);
 								//Sys.println("setter " + f.name + " " + getResolvedType(type) + " " + type);
-								obj.ret = type;
+								obj.r = type;
 							} else {
-								if(obj.ret != null) {
-									//Sys.println("normal field " + f.name + " " + getResolvedType(obj.ret) + " " + obj.ret);
+								if(obj.r != null) {
+									//Sys.println("normal field " + f.name + " " + getResolvedType(obj.r) + " " + obj.r);
 								}
 							}
 
 							if(obj.name == "_new")
 								obj.name = "new";
 
-							obj.ret = getResolvedType(obj.ret);
+							obj.r = MacroPrinter.typeToString(obj.r);
 
 							trace("FFun", obj);
 							funcInfos.push(obj);
@@ -339,7 +391,7 @@ class AbstractHandler {
 					ret: TPath({name: 'Dynamic', pack: []}),
 					params: [],
 					expr: macro {
-						return {
+						return @:fixed {
 							funcs: $v{funcInfos}
 						};
 					},
@@ -357,8 +409,8 @@ class AbstractHandler {
 			Context.defineModule(moduleName, [shadowClass], imports);
 			//trace(moduleName);
 
-			var printer = new haxe.macro.Printer();
-			var code = printer.printTypeDefinition(shadowClass);
+			//var printer = new haxe.macro.Printer();
+			//var code = printer.printTypeDefinition(shadowClass);
 			//trace(code);
 
 
