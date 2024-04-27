@@ -224,6 +224,7 @@ class Parser {
 			parseFullExpr(a);
 		}
 		var expr = if( a.length == 1 ) a[0] else mk(EBlock(a),0);
+		expr = AbstractProcessor.process(expr);
 		expr = Preprocessor.process(expr);
 		if(Parser.optimize) {
 			expr = Optimizer.optimize(expr);
@@ -398,8 +399,10 @@ class Parser {
 	function parseExprFromTokens(t:TokenList) {
 		var oldPos = readPos;
 		#if hscriptPos
-		var oldTokenMin = tokenMin;
-		var oldTokenMax = tokenMax;
+		var _oldTokenMin = tokenMin;
+		var _oldTokenMax = tokenMax;
+		var oldOldTokenMin = oldTokenMin;
+		var oldOldTokenMax = oldTokenMax;
 		#end
 		var oldTokens = tokens;
 
@@ -407,7 +410,11 @@ class Parser {
 		// unsure about these
 		#if hscriptPos
 		tokenMin = 0;
-		tokenMax = t.length - 1;
+		//tokenMax = t.length - 1;
+		tokenMax = 0;
+		oldTokenMin = 0;
+		oldTokenMax = 0;
+		//oldTokenMax = t.length - 1;
 		#end
 		readPos = 0;
 		//trace(t.map(getTk).map(tokenString));
@@ -418,6 +425,8 @@ class Parser {
 		#if hscriptPos
 		tokenMin = oldTokenMin;
 		tokenMax = oldTokenMax;
+		oldTokenMin = oldOldTokenMin;
+		oldTokenMax = oldOldTokenMax;
 		#end
 		readPos = oldPos;
 		return e;
@@ -604,8 +613,9 @@ class Parser {
 							var tmp2 = "__m_" + (uid++);
 							var e = mk(EBlock([
 								// TODO: Make it detect simple map comprehensions so we can optimize the map type
-								mk(EVar(tmp, null, mk(EMapDecl(ObjectMap, [], []), p1)), p1), // Assume ObjectMap, since it supports dynamic keys
-								mk(EVar(tmp2, null, mk(EField(mk(EIdent(tmp), p1), "set"), p1)), p1),
+								// TODO: make it detect the type from nextType
+								mk(EVar(tmp, parseTypeString("haxe.ds.ObjectMap<Dynamic, Dynamic>"), mk(EMapDecl(ObjectMap, [], []), p1)), p1), // Assume ObjectMap, since it supports dynamic keys
+								mk(EVar(tmp2, parseTypeString("(Dynamic, Dynamic) -> Void"), mk(EField(mk(EIdent(tmp), p1), "set"), p1)), p1),
 								mapMapCompr(tmp2, a[0]),
 								mk(EIdent(tmp),p1),
 							]),p1);
@@ -615,8 +625,8 @@ class Parser {
 						var tmp = "__a_" + (uid++);
 						var tmp2 = "__a_" + (uid++);
 						var e = mk(EBlock([
-							mk(EVar(tmp, null, mk(EArrayDecl([]), p1)), p1),
-							mk(EVar(tmp2, null, mk(EField(mk(EIdent(tmp), p1), "push"), p1)), p1),
+							mk(EVar(tmp, parseTypeString("Array<Dynamic>"), mk(EArrayDecl([]), p1)), p1),
+							mk(EVar(tmp2, parseTypeString("(Dynamic) -> Int"), mk(EField(mk(EIdent(tmp), p1), "push"), p1)), p1),
 							mapArrCompr(tmp2, a[0]),
 							mk(EIdent(tmp),p1),
 						]),p1);
@@ -1421,8 +1431,27 @@ class Parser {
 		return path;
 	}
 
+	static var typeCache:Map<String, CType> = [];
+
+	function parseTypeString(str:String) {
+		if(typeCache.exists(str))
+			return typeCache.get(str);
+
+		var parser = new Parser();
+		parser.initParser("__INTERNAL_TYPE_PARSER__:" + origin);
+		parser.line = line;
+		parser.input = str;
+		parser.readPos = 0;
+		var type = parser.parseType();
+
+		typeCache.set(str, type);
+		return type;
+	}
+
 	function parseType() : CType {
 		var t = token();
+		trace("Token: " + tokenString(t));
+		if( t == TEof ) return null;
 		switch( t ) {
 			case TId(v):
 				push(t);
@@ -1437,18 +1466,18 @@ class Parser {
 							params.push(parseType());
 							t = token();
 							switch( t ) {
-							case TComma: continue;
-							case TOp(op):
-								if( op == ">" ) break;
-								if( op.charCodeAt(0) == ">".code ) {
-									tokens.add(realToken(
-										TOp(op.substr(1)),
-										tokenMax - op.length - 1,
-										tokenMax
-									));
-									break;
-								}
-							default:
+								case TComma: continue;
+								case TOp(op):
+									if( op == ">" ) break;
+									if( op.charCodeAt(0) == ">".code ) {
+										tokens.add(realToken(
+											TOp(op.substr(1)),
+											tokenMax - op.length - 1,
+											tokenMax
+										));
+										break;
+									}
+								default:
 							}
 							unexpected(t);
 							break;

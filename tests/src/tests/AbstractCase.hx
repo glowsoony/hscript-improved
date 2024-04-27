@@ -14,6 +14,17 @@ class AbstractCase extends TestCase {
 		trace(access.att.test);
 
 		getNewInterp().execute(Util.parse("
+
+import haxe.xml.Access;
+
+var access = new Access(Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement());
+//var a2:Access = Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement();
+var a2 = new haxe.xml.Access(Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement());
+
+trace(access.att.test);
+"));
+
+/*getNewInterp().execute(Util.parse("
 // Converts to
 import haxe.xml._Access.Access_Impl_;
 import haxe.xml._Access.AttribAccess_Impl_;
@@ -33,7 +44,12 @@ import haxe.xml.Access;
 var access = new Access(Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement());
 
 trace(access.att.test);
-"));
+"));*/
+
+		/*headerCode = "function area(a:Int, b:Int):Int { return a * b; };";
+		function area(a:Int, b:Int):Int { return a * b; }
+
+		assertEq("[for(i in 0...10) for(j in 0...10) area(i, j)]", [for(i in 0...10) for(j in 0...10) area(i, j)]);*/
 	}
 
 	override function teardown() {

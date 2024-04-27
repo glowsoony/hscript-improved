@@ -49,6 +49,11 @@ class Printer {
 		return buf.toString();
 	}
 
+	public static function convertTypeToString( t : CType ) {
+		var printer = new Printer();
+		return printer.typeToString(t);
+	}
+
 	inline function add<T>(s:T) buf.add(s);
 
 	function type( t : CType ) {

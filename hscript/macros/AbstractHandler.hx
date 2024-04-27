@@ -357,12 +357,12 @@ class AbstractHandler {
 								}
 							}
 
-							if(obj.name == "_new")
-								obj.name = "new";
+							//if(obj.name == "_new")
+							//	obj.name = "new";
 
 							obj.ret = MacroPrinter.typeToString(obj.ret);
 
-							trace("FFun", obj);
+							//trace("FFun", obj);
 							var save:Dynamic = null;
 							if(true) {
 								save = [obj.name, obj.args, obj.ret, obj.access, obj.special];
@@ -385,47 +385,22 @@ class AbstractHandler {
 			//trace(cl.pos);
 
 			var shadowClass = macro class {
-
-			};
+				public static function abstract_funcs():Array<Array<Dynamic>> {
+					return @:fixed $v{funcInfos};
+				}
+			}
 
 			shadowClass.kind = TDClass(null, [
-				//{name: "IHScriptCustomBehaviour", pack: ["hscript"]},
+				//{name: "IHScriptAbstractHelper", pack: ["hscript"]},
 				//{name: "IHScriptCustomClassBehaviour", pack: ["hscript"]}
 			], false, true, false);
 			shadowClass.name = '${cl.name.substr(0, cl.name.length - "_Impl_".length)}$CLASS_SUFFIX';
 			//trace(shadowClass.name);
 			var imports = Context.getLocalImports().copy();
 			Utils.setupMetas(shadowClass, [], false);
-			//Utils.processImport(imports, "hscript.utils.UnsafeReflect", "UnsafeReflect");
-			trace(funcInfos);
-			shadowClass.fields.push({
-				name: "__abstract_helper",
-				pos: cl.pos,
-				access: [APublic, AStatic],
-				kind: FFun({
-					//ret: TPath({name: 'Dynamic', pack: []}),
-					ret: macro :{
-						funcs:Array<Dynamic>
-					},
-					params: [],
-					expr: macro {
-						return @:fixed {
-							funcs: $v{funcInfos}
-						};
-					},
-					args: [
-					]
-				})
-			});
-			//trace(cl.name, fields.length);
 
 			var moduleName = cl.module;
-			//if(cl.module.lastIndexOf(".") > 0) {
-			//	moduleName += cl.module.substr(0, cl.module.lastIndexOf(".")) + ".";
-			//}
-			//moduleName += "_" + cl.module.split(".").pop();
 			Context.defineModule(moduleName, [shadowClass], imports);
-			//trace(moduleName);
 
 			//var printer = new haxe.macro.Printer();
 			//var code = printer.printTypeDefinition(shadowClass);
