@@ -270,6 +270,8 @@ class AbstractHandler {
 										} else if(m.name == ":to") {
 											//throw "Unknown :to meta " + m;
 											special |= 8;
+										} else if(m.name == ":op") {
+											special |= 16;
 										}
 									}
 									special;
@@ -333,6 +335,10 @@ class AbstractHandler {
 									}
 									op;
 								}
+							}
+
+							if(obj.o == null) {
+								Reflect.deleteField(obj, "o");
 							}
 
 							if(obj.r == null && f.name.startsWith("get_")) {
