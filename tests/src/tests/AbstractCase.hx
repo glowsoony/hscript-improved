@@ -18,12 +18,12 @@ class AbstractCase extends TestCase {
 import haxe.xml.Access;
 
 var access = new Access(Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement());
-//var a2:Access = Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement();
 var a2 = new haxe.xml.Access(Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement());
 
 trace(access.att.test);
 "));
 
+//var a2:Access = Xml.parse('<test test=\"cool\"><hello>world</hello></test>').firstElement();
 /*getNewInterp().execute(Util.parse("
 // Converts to
 import haxe.xml._Access.Access_Impl_;

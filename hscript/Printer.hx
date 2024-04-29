@@ -506,7 +506,7 @@ class Printer {
 				var first = true;
 				for( a in args ) {
 					if( first ) first = false else add(", ");
-					expr(e);
+					expr(a);
 				}
 				add(")");
 			}

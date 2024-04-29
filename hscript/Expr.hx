@@ -54,6 +54,10 @@ class Expr {
 		this.origin = origin;
 		this.line = line;
 	}
+
+	public function toString() {
+		return "<Expr " + e + ">";
+	}
 }
 enum ExprDef
 #else

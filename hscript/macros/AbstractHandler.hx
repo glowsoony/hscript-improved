@@ -185,6 +185,7 @@ class AbstractHandler {
 
 		if(cl.name.endsWith("_Impl_") && !cl.name.endsWith(CLASS_SUFFIX)) // && ["Access_Impl_", "AttribAccess_Impl_"].contains(cl.name))
 		{
+			//trace("Processing " + cl);
 			//if(!initialized) {
 			//	initialized = true;
 			//	Context.onAfterTyping(function(mods) {
@@ -204,6 +205,7 @@ class AbstractHandler {
 			currentSelf = cl.name.substr(0, cl.name.length - "_Impl_".length);
 
 			var funcInfos = [];
+			var propsInfo = [];
 			//for(f in fields) {
 			//	trace(f.name, f.kind);
 			//}
@@ -375,6 +377,47 @@ class AbstractHandler {
 							funcInfos.push(save);
 							//trace(cl.name, obj);
 						}
+					case FProp(get, set, t, e):
+						if(f.access.contains(AStatic)) {
+							continue;
+						}
+						if(get != "get") {
+							trace("Unknown FProp getter " + get, f.pos);
+							continue;
+						}
+						if(e != null) {
+							trace("Unknown FProp expression " + e, f.pos);
+							continue;
+						}
+						//var getsetbits = 0;
+						var canSet = false;
+						// allow transform of getter setter
+						//switch(get) {
+						//	case "get": getsetbits |= 1;
+						//	case "dynamic": getsetbits |= 1;
+						//	//case "null": getsetbits |= 1; // since this cant be called outside of the class
+						//}
+						switch(set) {
+							case "set": canSet = true;
+							case "dynamic": canSet = true;
+							case "null": canSet = false; // since this cant be called outside of the class
+						}
+
+						var obj:Dynamic = {
+							name: f.name,
+							get: "get_" + f.name,
+							set: canSet ? "set_" + f.name : null
+						}
+
+						//var getset = get + "," + set;
+						var save:Dynamic = null;
+						if(true) {
+							save = [obj.name, obj.get, obj.set];
+						} else {
+							save = obj;
+						}
+						propsInfo.push(save);
+						//trace("FProp", getset, t, e);
 					default:
 				}
 				//funcInfos.push([f.name, ]);
@@ -385,8 +428,13 @@ class AbstractHandler {
 			//trace(cl.pos);
 
 			var shadowClass = macro class {
+				public static var __hx_impl__:String = $v{cl.pack.join(".") + "." + cl.name};
+
 				public static function abstract_funcs():Array<Array<Dynamic>> {
 					return @:fixed $v{funcInfos};
+				}
+				public static function abstract_props():Array<Array<String>> {
+					return @:fixed $v{propsInfo};
 				}
 			}
 

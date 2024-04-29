@@ -7,7 +7,13 @@ import hscript.Parser;
 
 enum AVarType {
 	VUnknown;
-	VVar(name:String, type:Null<String>);
+	VVar(name:String, type:ADeclType);
+}
+
+typedef ATypeInfo = {
+	impl: String,
+	cl: Class<Any>,
+	type: AType,
 }
 
 enum AType {
@@ -30,16 +36,18 @@ class ADeclVar {
 @:structInit
 class ADeclType {
 	public var name:String;
-	public var type:AType;
+	public var inf:ATypeInfo;
 	public var depth:Int;
 
 	public function toString():String {
-		return "type " + name + " : " + type + " @ " + depth;
+		return "type " + name + " : " + inf.type + " @ " + depth;
 	}
 }
 
 typedef AbstractData = {
+	var impl:String;
 	var funcs:Array<Array<Dynamic>>;
+	var props:Array<Array<String>>;
 }
 
 @:access(hscript.Parser)
@@ -61,7 +69,8 @@ class AbstractProcessor {
 	private static var depth:Int = 0;
 	private static var declared:Array<ADeclVar>;
 	private static var declaredTypes:Array<ADeclType>;
-	private static var abstractData:Map<String, AbstractData> = [];
+	private static var abstractData:Map<String, AbstractData>;
+	private static var unusedImports:Map<String, String>;
 
 	private static function addDeclared(e:String, type:AVarType = VUnknown) {
 		declared.push({
@@ -71,10 +80,10 @@ class AbstractProcessor {
 		});
 	}
 
-	private static function addTypeDeclared(e:String, type:AType) {
+	private static function addTypeDeclared(e:String, inf:ATypeInfo) {
 		declaredTypes.push({
 			name: e,
-			type: type,
+			inf: inf,
 			depth: depth
 		});
 	}
@@ -103,8 +112,8 @@ class AbstractProcessor {
 		var abstr = resolveAbstract(e);
 		if(abstr != null) {
 			return {
-				name: e.substr(e.lastIndexOf(".") + 1),
-				type: abstr,
+				name: getFieldName(e),
+				inf: abstr,
 				depth: depth
 			}
 		}
@@ -127,6 +136,8 @@ class AbstractProcessor {
 		declared = new Array();
 		declaredTypes = new Array();
 		abstractData = new Map();
+		unusedImports = new Map();
+		storedTypes = [];
 
 		var e = _process(e, true);
 
@@ -134,6 +145,10 @@ class AbstractProcessor {
 		declared = null;
 		declaredTypes = null;
 		abstractData = null;
+		unusedImports = null;
+		storedTypes = null;
+
+		e = removeMetaType(e);
 
 		// Automatically add imports for stuff
 		switch(expr(e)) {
@@ -155,69 +170,130 @@ class AbstractProcessor {
 		return e;
 	}
 
-	static function getAbstractImport(name:String, m:KImportMode = INormal):String {
-		var type = resolveAbstract(name);
-		if(type == null) return null;
+	static function removeMetaType(e:Expr) {
+		if(e == null)
+			return null;
+		switch(Tools.expr(e)) {
+			case EMeta(":$type", [expr(_) => EConst(CInt(t))], e):
+				return e;
+			default:
+		}
+		return Tools.map(e, removeMetaType);
+	}
 
-		var fname = name.substr(name.lastIndexOf(".") + 1);
+	static function getAbstractImport(name:String, m:KImportMode = INormal):String {
+		var typeInfo = resolveAbstract(name);
+		if(typeInfo == null) return null;
+
+		var fname = getFieldName(name);
 		var varName = switch(m) {
 			case IAs(a): a;
 			default: fname;
 		}
-		addTypeDeclared(varName, type);
+		addTypeDeclared(varName, typeInfo);
 		trace("Adding abstract " + name + " as " + varName);
 
-		var module = formatAbstractImport(name);
-		return module;
-	}
-
-	static function formatAbstractImport(name:String):String {
-		var fname = name.substr(name.lastIndexOf(".") + 1);
-
-		// haxe.xml.Access -> haxe.xml._Access.Access_Impl_
-		var module = name.substr(0, name.length - fname.length) + "_" + fname + "." + fname + "_Impl_";
-		trace(module);
-		return module;
+		return typeInfo.impl;
 	}
 
 	public static function loadAbstractData(name:String, ?type:Class<Any>) {
 		if(abstractData.exists(name)) return abstractData.get(name);
 
 		if(type == null) {
-			type = resolveClassAbstract(name);
+			var t = resolveClassAbstract(name);
+			if(t == null) return null;
+			type = t.cl;
 			if(type == null) return null;
 		}
 
-		var data = {
+		var data:AbstractData = {
 			//var t:Dynamic = Type.createInstance(type, []);
 			var t:Dynamic = type;
 			{
-				funcs: t.abstract_funcs()
+				impl: t.__hx_impl__,
+				funcs: t.abstract_funcs(),
+				props: t.abstract_props()
 			}
 		};
 
 		abstractData.set(name, data);
+		abstractData.set(data.impl, data);
 		trace("Loading abstract " + name + " as " + data);
 		return data;
 	}
 
-	static function resolveAbstract(name:String, m:KImportMode = INormal):AType {
-		var type = resolveClassAbstract(name);
-		if(type == null) return null;
+	static function resolveAbstract(name:String, m:KImportMode = INormal) {
+		var typeInfo = resolveClassAbstract(name);
+		if(typeInfo == null) return null;
 
 		//loadAbstractData(name, type);
-		var impl = formatAbstractImport(name);
-		addImport(impl, m);
-		return TAbstract(type, impl);
+		addImport(typeInfo.impl, m);
+		typeInfo.type = TAbstract(typeInfo.cl, typeInfo.impl);
+		return typeInfo;
 	}
 
-	static function resolveClassAbstract(name:String) {
-		return Type.resolveClass(name + "_HSA");
+	static function resolveClassAbstract(name:String):ATypeInfo {
+		var cl = Type.resolveClass(name + "_HSA");
+		trace("Resolving " + name + "_HSA");
+		if(cl == null) {
+			var spr = name.split(".");
+			if(spr.length < 2)
+				return null;
+			spr.splice(-2, 1); // remove the last last name;
+			trace("Resolving " + spr.join(".") + "_HSA");
+			cl = Type.resolveClass(spr.join(".") + "_HSA");
+		}
+		if(cl != null) {
+			var cld:Dynamic = cl;
+			return {
+				impl: cld.__hx_impl__,
+				cl: cl,
+				type: null,
+			}
+		}
+		return null;
+	}
+
+	static function findAbstractFromFieldName(name:String):AType {
+		if(name.indexOf(".") == -1) {
+			trace("Finding abstract from field name " + name + " " + unusedImports);
+			if(unusedImports.exists(name)) {
+				var fullName = unusedImports.get(name);
+				addImport(getAbstractImport(fullName, INormal), INormal);
+				unusedImports.remove(name);
+				var v = resolveAbstract(fullName, INormal);
+				if(v != null)
+					return v.type;
+			}
+		}
+
+		trace("Finding abstract from field name " + name);
+		var v = resolveAbstract(name, INormal);
+		if(v != null)
+			return v.type;
+		return null;
 	}
 
 	static function getFieldName(e:String) {
 		var name = e.substr(e.lastIndexOf(".") + 1);
 		return name;
+	}
+
+	private static var storedTypes:Array<AType>;
+
+	static function setStoredType(type:AType):Int {
+		var idx = storedTypes.indexOf(type);
+		if(idx != -1) return idx;
+		storedTypes.push(type);
+		return storedTypes.length - 1;
+	}
+
+	static inline function getStoredType(idx:Int):AType {
+		return storedTypes[idx];
+	}
+
+	static function wrapType(e:Expr, type:AType):Expr {
+		return mk(EMeta(":$type", [mk(EConst(CInt(setStoredType(type))), e)], e), e);
 	}
 
 	private static function _process(e:Expr, top:Bool = false):Expr {
@@ -229,7 +305,11 @@ class AbstractProcessor {
 		//	return _process(e, false);
 		//});
 
-		//trace(expr(e));
+		trace(expr(e));
+
+		e = endProcess(e);
+
+		if(e == null) return null;
 
 		var ge = e;
 
@@ -239,7 +319,7 @@ class AbstractProcessor {
 				switch(Tools.expr(e)) {
 					case ENew(n, _):
 						type = n;
-					case EIdent(n):
+					case EIdent(n): // i dont think this worksc
 						// var a = Abstract;
 						// var b = a; // Gets detected
 						type = getDeclaredType(n).name;
@@ -254,7 +334,7 @@ class AbstractProcessor {
 					var v = getDeclaredType(type);
 					trace(v);
 					if(v != null) {
-						addDeclared(vname, VVar(vname, v.name));
+						addDeclared(vname, VVar(vname, v));
 						trace("Adding var " + vname + " with type " + v.name);
 						//return mk(EField(mk(EIdent(v.name), e), "new", p), e);
 					}
@@ -267,13 +347,13 @@ class AbstractProcessor {
 				var e = switch(Tools.expr(e)) {
 					case ENew(n, args):
 						var type = getDeclaredType(n);
-						if(type == null) return endProcess(e);
+						if(type == null) return endProcess(ge);
 
 						var stype = t != null ? Printer.convertTypeToString(t) : null;
 						trace("New " + n + " " + stype);
 
-						switch(type) {
-							case _.type => TAbstract(at, impl):
+						switch(type.inf.type) {
+							case TAbstract(at, impl):
 								var helper:AbstractDataHelper = new AbstractDataHelper(type.name, at);
 								var constructor = helper.getFuncForConstructor();
 								trace("Converting new call to " + constructor);
@@ -295,9 +375,89 @@ class AbstractProcessor {
 				};
 				if(e != null)
 					return mk(EVar(vname, t, e, p, s), ge);
-			//case EField(e, f, p):
-			//	var type = getDeclaredType(e);
-			//	if(type == null) return endProcess(e);
+			case EField(e, f, p):
+				var typeInfo = switch(Tools.expr(e)) {
+					case EIdent(n):
+						var a = getDeclared(n);
+						if(a != null) {
+							switch(a.type) {
+								case VVar(name, type): type.inf.type;
+								default: null;
+							}
+						} else {
+							null;
+						}
+					case EMeta(":$type", [expr(_) => EConst(CInt(t))], _):
+						getStoredType(t);
+					default:
+						null;
+				}
+				trace("EField " + e + " " + f);
+				trace("Type: " + typeInfo);
+				if(typeInfo == null) return endProcess(ge);
+
+				trace("##############");
+				trace("##############");
+				trace("##############");
+
+				var e = switch(typeInfo) {
+					case TAbstract(at, impl):
+						var helper:AbstractDataHelper = new AbstractDataHelper(impl, at);
+
+						var resolve = helper.getResolveFunc();
+						trace("Resolve func: " + resolve);
+						if(resolve != null) { // a.b -> a.resolve(b);
+							var returnType = helper.getTypeOfFunc(resolve);
+							var retType = findAbstractFromFieldName(returnType);
+							trace("Expr: " + Printer.toString(e));
+
+							var field = mk(EField(mk(EIdent(getFieldName(impl)), e), resolve, p), e);
+							var call = mk(ECall(field, [e, mk(EConst(CString(f)), e)]), e);
+
+							if(retType != null) {
+								call = wrapType(call, retType);
+							}
+							//tempExprTypes.set(call, retType);
+							//storedTypes.push(field);
+							return endProcess(call);
+						}
+
+						// access.has -> Access_Impl_.get_has()
+						var v = helper.getProps(f);
+						if(v != null) // get
+						{
+							var getterType = helper.getTypeOfFunc(v[0]);
+							if(getterType != null) {
+								trace("Getter: " + getterType);
+								trace("v:" + v);
+
+								var retType = findAbstractFromFieldName(getterType);
+
+								var field = mk(EField(mk(EIdent(getFieldName(impl)), e), v[0], p), e);
+								var call = mk(ECall(field, [e]), e);
+								// TODO: make rettype stored as something? that is acceptable in expr
+								// if(!typeArray.contains(retType)) typeArray.push(retType);
+								// Either use like EConst(CInt(typeArray.indexOf(retType)))
+								
+								var meta = wrapType(call, retType);
+
+								trace("Expr: " + Printer.toString(meta));
+
+
+								//tempExprTypes.set(call, retType);
+								//storedTypes.push(field);
+								endProcess(meta);
+							} else {
+								null;
+							}
+						}
+						else
+							null;
+					default: null;
+				}
+
+				if(e != null)
+					return e;
 
 				//switch(type) {
 				//	case _.type => TAbstract(at, impl):
@@ -322,16 +482,33 @@ class AbstractProcessor {
 				var abstractImport = getAbstractImport(n, m);
 				if(abstractImport != null) {
 					addImport(abstractImport, m);
+					if(n == "haxe.xml.Access") {
+						var toImport = [
+							"haxe.xml.Access.NodeAccess",
+							"haxe.xml.Access.AttribAccess",
+							"haxe.xml.Access.HasAttribAccess",
+							"haxe.xml.Access.HasNodeAccess",
+							"haxe.xml.Access.NodeListAccess",
+						];
+						for(n in toImport) {
+							//var m = INormal;//IAs("$" + n);
+							//addImport(getAbstractImport(n, m), m);
+							unusedImports.set(getFieldName(n), n);
+						}
+					}
 					return null;//mk(abstractImport, e);
 				}
 			default:
 		}
 
-		return endProcess(e);
+		return (e);
 	}
 
 	static function endProcess(e:Expr):Expr {
+		if(e == null) return null;
+		var ge = e;
 		return Tools.map(e, function(e) {
+			if(e == null) return mk(EBlock([]), ge); // Hacky
 			switch(Tools.expr(e)) {
 				case EBlock(exprs):
 					depth++;
@@ -388,9 +565,29 @@ class AbstractDataHelper {
 
 	// [name, args, ret, access, special, ?op]
 
+	public function getProps(fieldName:String):Array<String> {
+		var prop = data.props;
+		for(v in prop) {
+			if(v[0] == fieldName) {
+				return [v[1], v[2]];
+			}
+		}
+		return null;
+	}
+
 	public function getResolveFunc(?wantedType:Null<String>):String {
 		var t = getFuncForOp("a.b", wantedType);
 		if(t != null) return t;
+		return null;
+	}
+
+	public function getTypeOfFunc(f:String):String {
+		var funcs = data.funcs;
+		for(func in funcs) {
+			if(func[0] == f) {
+				return func[2];
+			}
+		}
 		return null;
 	}
 
@@ -402,6 +599,7 @@ class AbstractDataHelper {
 					if(wantedType != null) {
 						var types:Array<String> = func[1].split("|");
 						var wtypes:Array<String> = wantedType.split("|");
+						if(types.length != wtypes.length) continue;
 						var didBreak = false;
 						for(i=>type in types) {
 							if(type != wtypes[i]) {
@@ -427,6 +625,7 @@ class AbstractDataHelper {
 				if(wantedType != null) {
 					var types:Array<String> = func[1].split("|");
 					var wtypes:Array<String> = wantedType.split("|");
+					if(types.length != wtypes.length) continue;
 					var didBreak = false;
 					for(i=>type in types) {
 						if(type != wtypes[i]) {
@@ -451,6 +650,7 @@ class AbstractDataHelper {
 				if(wantedType != null) {
 					var types:Array<String> = func[1].split("|");
 					var wtypes:Array<String> = wantedType.split("|");
+					if(types.length != wtypes.length) continue;
 					var didBreak = false;
 					for(i=>type in types) {
 						if(type != wtypes[i]) {
@@ -475,6 +675,7 @@ class AbstractDataHelper {
 				if(wantedType != null) {
 					var types:Array<String> = func[1].split("|");
 					var wtypes:Array<String> = wantedType.split("|");
+					if(types.length != wtypes.length) continue;
 					var didBreak = false;
 					for(i=>type in types) {
 						if(type != wtypes[i]) {
