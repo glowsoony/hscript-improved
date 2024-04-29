@@ -305,8 +305,6 @@ class AbstractProcessor {
 		//	return _process(e, false);
 		//});
 
-		trace(expr(e));
-
 		e = endProcess(e);
 
 		if(e == null) return null;
@@ -332,7 +330,6 @@ class AbstractProcessor {
 
 				if(type != null) {
 					var v = getDeclaredType(type);
-					trace(v);
 					if(v != null) {
 						addDeclared(vname, VVar(vname, v));
 						trace("Adding var " + vname + " with type " + v.name);
@@ -392,13 +389,9 @@ class AbstractProcessor {
 					default:
 						null;
 				}
+				if(typeInfo == null) return endProcess(ge);
 				trace("EField " + e + " " + f);
 				trace("Type: " + typeInfo);
-				if(typeInfo == null) return endProcess(ge);
-
-				trace("##############");
-				trace("##############");
-				trace("##############");
 
 				var e = switch(typeInfo) {
 					case TAbstract(at, impl):
@@ -417,8 +410,6 @@ class AbstractProcessor {
 							if(retType != null) {
 								call = wrapType(call, retType);
 							}
-							//tempExprTypes.set(call, retType);
-							//storedTypes.push(field);
 							return endProcess(call);
 						}
 
@@ -435,17 +426,9 @@ class AbstractProcessor {
 
 								var field = mk(EField(mk(EIdent(getFieldName(impl)), e), v[0], p), e);
 								var call = mk(ECall(field, [e]), e);
-								// TODO: make rettype stored as something? that is acceptable in expr
-								// if(!typeArray.contains(retType)) typeArray.push(retType);
-								// Either use like EConst(CInt(typeArray.indexOf(retType)))
-								
 								var meta = wrapType(call, retType);
 
 								trace("Expr: " + Printer.toString(meta));
-
-
-								//tempExprTypes.set(call, retType);
-								//storedTypes.push(field);
 								endProcess(meta);
 							} else {
 								null;
@@ -458,26 +441,6 @@ class AbstractProcessor {
 
 				if(e != null)
 					return e;
-
-				//switch(type) {
-				//	case _.type => TAbstract(at, impl):
-				//		var helper:AbstractDataHelper = new AbstractDataHelper(type.name, at);
-				//		var constructor = helper.getFuncForConstructor();
-				//		trace("Converting new call to " + constructor);
-				//		return mk(
-				//			ECall(
-				//				mk(
-				//					EField(
-				//						mk(
-				//							EIdent(getFieldName(impl)),
-				//							e
-				//						),
-				//					constructor),
-				//				e), args
-				//			), e
-				//		);
-				//	default: null;
-				//}
 			case EImport(n, m):
 				var abstractImport = getAbstractImport(n, m);
 				if(abstractImport != null) {
