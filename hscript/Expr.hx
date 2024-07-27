@@ -19,7 +19,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package hscript;
+package _hscript;
 
 enum Const {
 	CInt( v : Int );
@@ -38,7 +38,7 @@ enum MapType {
 	UnknownMap;
 }
 
-typedef Error = hscript.Error.Error_;
+typedef Error = _hscript.Error.Error_;
 
 #if hscriptPos
 class Expr {

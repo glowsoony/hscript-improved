@@ -1,9 +1,9 @@
-package hscript;
+package _hscript;
 
-import hscript.Expr;
-import hscript.Error;
-import hscript.Tools;
-import hscript.Parser;
+import _hscript.Expr;
+import _hscript.Error;
+import _hscript.Tools;
+import _hscript.Parser;
 
 enum AVarType {
 	VUnknown;
@@ -50,7 +50,7 @@ typedef AbstractData = {
 	var props:Array<Array<String>>;
 }
 
-@:access(hscript.Parser)
+@:access(_hscript.Parser)
 class AbstractProcessor {
 	static inline function expr(e:Expr) return Tools.expr(e);
 

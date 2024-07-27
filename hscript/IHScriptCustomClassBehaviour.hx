@@ -1,6 +1,6 @@
-package hscript;
+package _hscript;
 
-import hscript.Interp;
+import _hscript.Interp;
 
 interface IHScriptCustomClassBehaviour {
 	public var __interp:Interp; // TODO: Remove

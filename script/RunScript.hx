@@ -1,7 +1,7 @@
 package;
 
 import haxe.*;
-import hscript.*;
+import _hscript.*;
 import sys.*;
 import sys.io.*;
 import sys.net.*;
@@ -59,9 +59,9 @@ class RunScript {
 	}
 	
 	static function executeScript(script:String) {
-		var parser = new hscript.Parser();
+		var parser = new _hscript.Parser();
 		var program = parser.parseString(script);
-		var interp = new hscript.Interp();
+		var interp = new _hscript.Interp();
 		
 		// export some useful classes
 		interp.variables.set("Array", Array);
@@ -90,33 +90,33 @@ class RunScript {
 	}
 	
 	static function printHelp(exit:Bool = true) {
-		var hscriptPath = getHaxelibPath("hscript");
+		var hscriptPath = getHaxelibPath("_hscript");
 		var meta:Dynamic = Json.parse(File.getContent(hscriptPath + "haxelib.json"));
 		info('${meta.name} v${meta.version}');
 		info('${meta.description}');
 		info("");
-		info("usage: haxelib run hscript SCRIPT");
-		info("   or: haxelib run hscript -f SCRIPTPATH");
-		info("   or: haxelib run hscript --file SCRIPTPATH");
+		info("usage: haxelib run _hscript SCRIPT");
+		info("   or: haxelib run _hscript -f SCRIPTPATH");
+		info("   or: haxelib run _hscript --file SCRIPTPATH");
 		info("");
 		info("examples:");
-		info("   haxelib run hscript var x = 4; 1 + 2 * x");
+		info("   haxelib run _hscript var x = 4; 1 + 2 * x");
 		info("   9");
 		info("");
-		info("   haxelib run hscript \"5 | 6\"");
+		info("   haxelib run _hscript \"5 | 6\"");
 		info("   7");
 		info("");
-		info("   haxelib run hscript for(i in 0...5) Sys.stdout().writeString(i + ', '); 'done'");
+		info("   haxelib run _hscript for(i in 0...5) Sys.stdout().writeString(i + ', '); 'done'");
 		info("   0, 1, 2, 3, 4, done");
 		info("");
-		info("   haxelib run hscript sys.net.Host.localhost()");
+		info("   haxelib run _hscript sys.net.Host.localhost()");
 		info("   mycomputer");
 		info("");
 		if(Sys.systemName() == "Windows") {
-			info("   for /f %i in ('haxelib run hscript \"new sys.net.Host('')\"') do @set MY_IP=%i");
+			info("   for /f %i in ('haxelib run _hscript \"new sys.net.Host('')\"') do @set MY_IP=%i");
 			info("   echo %MY_IP%");
 		} else {
-			info("   MY_IP=$(haxelib run hscript \"new sys.net.Host('')\"')");
+			info("   MY_IP=$(haxelib run _hscript \"new sys.net.Host('')\"')");
 			info("   echo $MY_IP");
 		}
 		info("   192.168.248.1");

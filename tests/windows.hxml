@@ -19,9 +19,9 @@
 --define windows
 
 --macro keep('IntIterator')
-# --macro hscript.macros.UsingHandler.init()
-# --macro hscript.macros.ClassExtendMacro.init()
---macro hscript.macros.AbstractHandler.init()
+# --macro _hscript.macros.UsingHandler.init()
+# --macro _hscript.macros.ClassExtendMacro.init()
+--macro _hscript.macros.AbstractHandler.init()
 
 # Copying the assets from source code to bin folder
 # --cmd Xcopy assets\ bin\cpp\assets\ /E /H /C /I /Y

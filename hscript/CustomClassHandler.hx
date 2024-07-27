@@ -1,7 +1,7 @@
-package hscript;
+package _hscript;
 
-import hscript.Interp.DeclaredVar;
-import hscript.utils.UnsafeReflect;
+import _hscript.Interp.DeclaredVar;
+import _hscript.utils.UnsafeReflect;
 
 using StringTools;
 

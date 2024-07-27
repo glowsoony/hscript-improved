@@ -1,10 +1,10 @@
 package;
 
-import hscript.Interp;
-import hscript.Expr;
+import _hscript.Interp;
+import _hscript.Expr;
 
-@:access(hscript.Interp)
-@:access(hscript.Parser)
+@:access(_hscript.Interp)
+@:access(_hscript.Parser)
 class HScriptRunner {
 	public var interp:Interp;
 	public var headerCode:String = "";

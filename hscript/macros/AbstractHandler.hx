@@ -1,4 +1,4 @@
-package hscript.macros;
+package _hscript.macros;
 
 #if macro
 import Type.ValueType;
@@ -21,7 +21,7 @@ class AbstractHandler {
 		if(Context.defined("display")) return;
 		//for(apply in Config.ALLOWED_ABSTRACT_AND_ENUM) {
 			//}
-		Compiler.addGlobalMetadata("", '@:build(hscript.macros.AbstractHandler.build())');
+		Compiler.addGlobalMetadata("", '@:build(_hscript.macros.AbstractHandler.build())');
 
 		//var module = cl.module + cl.name;
 		#end
@@ -439,8 +439,8 @@ class AbstractHandler {
 			}
 
 			shadowClass.kind = TDClass(null, [
-				//{name: "IHScriptAbstractHelper", pack: ["hscript"]},
-				//{name: "IHScriptCustomClassBehaviour", pack: ["hscript"]}
+				//{name: "IHScriptAbstractHelper", pack: ["_hscript"]},
+				//{name: "IHScriptCustomClassBehaviour", pack: ["_hscript"]}
 			], false, true, false);
 			shadowClass.name = '${cl.name.substr(0, cl.name.length - "_Impl_".length)}$CLASS_SUFFIX';
 			//trace(shadowClass.name);

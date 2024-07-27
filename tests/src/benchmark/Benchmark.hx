@@ -1,6 +1,6 @@
 package benchmark;
 
-import hscript.Expr;
+import _hscript.Expr;
 
 class Benchmark extends HScriptRunner {
 	public var haxeTimes:Array<Float> = [];

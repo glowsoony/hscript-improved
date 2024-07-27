@@ -1,5 +1,5 @@
-package hscript;
-import hscript.Expr;
+package _hscript;
+import _hscript.Expr;
 
 /**
 	This is a special type that can be used in API.
@@ -84,7 +84,7 @@ class Completion {
 	}
 }
 
-@:allow(hscript.Checker)
+@:allow(_hscript.Checker)
 class CheckerTypes {
 
 	var types : Map<String,CTypedecl> = new Map();
@@ -194,7 +194,7 @@ class CheckerTypes {
 			};
 			for( p in t.params )
 				td.params.push(TParam(p));
-			if( t.path == "hscript.TypeCheck" )
+			if( t.path == "_hscript.TypeCheck" )
 				td.params.reverse();
 			todo.push(function() {
 				localParams = [for( pt in td.params ) t.path+"."+Checker.typeStr(pt) => pt];
@@ -432,7 +432,7 @@ class Checker {
 		case TInst(c, args): c.name + makeArgs(args);
 		case TEnum(e, args): e.name + makeArgs(args);
 		case TType(t, args):
-			if( t.name == "hscript.TypeCheck" )
+			if( t.name == "_hscript.TypeCheck" )
 				typeStr(args[1]);
 			else
 				t.name + makeArgs(args);

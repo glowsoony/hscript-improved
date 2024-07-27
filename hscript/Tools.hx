@@ -19,9 +19,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package hscript;
-import hscript.Expr;
-import hscript.utils.UnsafeReflect;
+package _hscript;
+import _hscript.Expr;
+import _hscript.utils.UnsafeReflect;
 
 class Tools {
 

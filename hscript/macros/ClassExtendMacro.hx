@@ -1,4 +1,4 @@
-package hscript.macros;
+package _hscript.macros;
 
 #if macro
 import haxe.macro.Type.ClassType;
@@ -27,7 +27,7 @@ class ClassExtendMacro {
 		#if CUSTOM_CLASSES
 		if(Context.defined("display")) return;
 		for(apply in Config.ALLOWED_CUSTOM_CLASSES) {
-			Compiler.addGlobalMetadata(apply, "@:build(hscript.macros.ClassExtendMacro.build())");
+			Compiler.addGlobalMetadata(apply, "@:build(_hscript.macros.ClassExtendMacro.build())");
 		}
 		#end
 		#end
@@ -59,7 +59,7 @@ class ClassExtendMacro {
 			if(key == "away3d.tools.commands.Mirror") return fields; // Error: Unknown identifier
 			if(key == "away3d.tools.commands.SphereMaker") return fields; // Error: Unknown identifier
 			if(key == "away3d.tools.commands.Weld") return fields; // Error: Unknown identifier
-			if(fkey == "hscript.CustomClassHandler.TemplateClass") return fields; // Error: Redefined
+			if(fkey == "_hscript.CustomClassHandler.TemplateClass") return fields; // Error: Redefined
 			if(key == "sys.thread.EventLoop") return fields; // Error: cant override force inlined
 			if(Config.DISALLOW_CUSTOM_CLASSES.contains(cl.module) || Config.DISALLOW_CUSTOM_CLASSES.contains(fkey)) return fields;
 			if(cl.module.contains("_")) return fields; // Weird issue, sorry
@@ -261,22 +261,22 @@ class ClassExtendMacro {
 				pack: cl.pack.copy(),
 				name: cl.name
 			}, [
-				{name: "IHScriptCustomBehaviour", pack: ["hscript"]},
-				{name: "IHScriptCustomClassBehaviour", pack: ["hscript"]}
+				{name: "IHScriptCustomBehaviour", pack: ["_hscript"]},
+				{name: "IHScriptCustomClassBehaviour", pack: ["_hscript"]}
 			], false, true, false);
 			shadowClass.name = '${cl.name}$CLASS_SUFFIX';
 			var imports = Context.getLocalImports().copy();
 			Utils.setupMetas(shadowClass, imports);
-			Utils.processImport(imports, "hscript.utils.UnsafeReflect", "UnsafeReflect");
+			Utils.processImport(imports, "_hscript.utils.UnsafeReflect", "UnsafeReflect");
 
-			// Adding hscript getters and setters
+			// Adding _hscript getters and setters
 
 			// TODO: Remove
 			shadowClass.fields.push({
 				name: "__interp",
 				pos: Context.currentPos(),
 				kind: FVar(TPath({
-					pack: ['hscript'],
+					pack: ['_hscript'],
 					name: 'Interp'
 				})),
 				access: [APublic]

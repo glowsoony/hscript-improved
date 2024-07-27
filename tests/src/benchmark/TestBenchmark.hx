@@ -6,8 +6,8 @@ class TestBenchmark extends Benchmark {
 		super("Test", 10000);
 	}
 
-	//var hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6); if(true == true) a.push(1);";
-	var hscript = "
+	//var _hscript = "var a:Array<Float> = []; for (i in 0...1000) a.push(i * 2 + 1 / 6); if(true == true) a.push(1);";
+	var _hscript = "
 	var a:Array<Float> = [];
 	for(i in 0...1000) {
 		switch(5) {
@@ -31,7 +31,7 @@ class TestBenchmark extends Benchmark {
 			test: test
 		};
 		if(expr == null)
-			cacheExpr(hscript);
+			cacheExpr(_hscript);
 		interp.variables.remove("a");
 		//interp.variables.set("aaa", aaa);
 		interp.variables.set("test", test);

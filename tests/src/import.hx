@@ -1,4 +1,4 @@
-import hscript.Interp;
-import hscript.Parser;
+import _hscript.Interp;
+import _hscript.Parser;
 
 import Util;

@@ -1,11 +1,11 @@
 package tests;
 
-import hscript.Printer;
-import hscript.Tools;
-import hscript.Expr.Error;
+import _hscript.Printer;
+import _hscript.Tools;
+import _hscript.Expr.Error;
 
-@:access(hscript.Interp)
-@:access(hscript.Parser)
+@:access(_hscript.Interp)
+@:access(_hscript.Parser)
 class TestCase extends HScriptRunner {
 	public function assertEq(script:String, expected:Dynamic, ?message:String, ?vars:Dynamic, ?pos:haxe.PosInfos) {
 		if(message == null)
@@ -49,7 +49,7 @@ class TestCase extends HScriptRunner {
 			Sys.println("## Got result: " + result);
 			Sys.println("> " + Printer.convertExprToString(lastExpr));
 			return Util.failed();
-		} catch(e:hscript.Error) {
+		} catch(e:_hscript.Error) {
 			var e = Printer.getPrintableError(e);
 			if(Type.enumEq(e, expectedError)) {
 				return Util.passed();

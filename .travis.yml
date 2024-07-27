@@ -48,7 +48,7 @@ install:
   - haxelib install hxjava
   - haxelib install hxcs
   - haxelib install hx3compat
-  - haxelib dev hscript .
+  - haxelib dev _hscript .
   - haxelib list
 
 script:

@@ -94,7 +94,7 @@ class StringCase extends TestCase {
 		assertEqPrintable("'regional indicators \\u{1F1FA}\\u{1F1F8}, and musical note \\u{1F3B5}.'", 'regional indicators \u{1F1FA}\u{1F1F8}, and musical note \u{1F3B5}.');
 		assertEqPrintable("'\\u{10FFFF}\\u{1F1FA}\\u{3042}\\u{3B1}\\u{F1}\\u{A}'", '\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}');
 
-		//trace(hscript.Printer.getEscapedString("\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}"));
+		//trace(_hscript.Printer.getEscapedString("\u{10FFFF}\u{1F1FA}\u{3042}\u{3B1}\u{F1}\u{A}"));
 
 		assertEq('"\\""', "\"");
 		assertEq("'\\''", '\'');

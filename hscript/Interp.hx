@@ -26,15 +26,15 @@
  * - Added Imports
  * - Added @:bypassAccessor
  */
-package hscript;
+package _hscript;
 
 import haxe.Constraints.IMap;
 import haxe.EnumTools;
 import haxe.PosInfos;
 import haxe.display.Protocol.InitializeResult;
 import haxe.iterators.StringKeyValueIteratorUnicode;
-import hscript.Expr;
-import hscript.utils.UnsafeReflect;
+import _hscript.Expr;
+import _hscript.utils.UnsafeReflect;
 
 using StringTools;
 
@@ -161,7 +161,7 @@ class Interp {
 		#if !NO_FROM_CHAR_CODE_FIX
 		if(!Preprocessor.isStringFromCharCodeFixed) {
 			// DONT CALL THIS DIRECTLY, USE String.fromCharCode, the preprocessor will call it for you
-			variables.set("__StringWorkaround__fromCharCode", function(a:Int) { // TODO: make hscript only add this if its used
+			variables.set("__StringWorkaround__fromCharCode", function(a:Int) { // TODO: make _hscript only add this if its used
 				return String.fromCharCode(a);
 			});
 		}
@@ -180,7 +180,7 @@ class Interp {
 		if (curExpr != null)
 			return cast {fileName: curExpr.origin, lineNumber: curExpr.line};
 		#end
-		return cast {fileName: "hscript", lineNumber: 0};
+		return cast {fileName: "_hscript", lineNumber: 0};
 	}
 
 	function initOps() {

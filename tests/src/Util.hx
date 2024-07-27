@@ -1,5 +1,5 @@
-import hscript.Expr.Error;
-import hscript.Printer;
+import _hscript.Expr.Error;
+import _hscript.Printer;
 import haxe.Constraints.IMap;
 import haxe.EnumTools.EnumValueTools;
 
