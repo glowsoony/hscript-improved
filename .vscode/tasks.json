@@ -6,7 +6,7 @@
 		{
 			"label": "Build",
 			"type": "hxml",
-			"file": "_hscript.hxml",
+			"file": "hscript.hxml",
 			"group": {
 				"kind": "build",
 				"isDefault": true
