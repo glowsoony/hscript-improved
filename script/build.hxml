@@ -1,4 +1,4 @@
 -main RunScript
 -neko ../run.n
--lib hscript
+-lib _hscript
 -dce no

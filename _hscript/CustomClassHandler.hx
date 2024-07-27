@@ -1,4 +1,4 @@
-package hscript;
+package _hscript;
 
 using StringTools;
 

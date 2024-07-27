@@ -1,4 +1,4 @@
-package hscript;
+package _hscript;
 
 interface IHScriptCustomBehaviour {
 	public function hset(name:String, val:Dynamic):Dynamic;

@@ -1,4 +1,4 @@
-package hscript;
+package _hscript;
 
 class Config {
 	// Runs support for custom classes in these

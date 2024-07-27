@@ -1,20 +1,20 @@
 import haxe.ds.EnumValueMap;
 import haxe.ds.Option;
-import hscript.Macro;
-import hscript.Tools;
-import hscript.Async;
-import hscript.Printer;
-import hscript.Checker;
+import _hscript.Macro;
+import _hscript.Tools;
+import _hscript.Async;
+import _hscript.Printer;
+import _hscript.Checker;
 import haxe.unit.*;
 
 class TestHScript extends TestCase {
 	function assertScript(x,v:Dynamic,?vars : Dynamic, allowTypes=false, ?pos:haxe.PosInfos) {
-		var p = new hscript.Parser();
+		var p = new _hscript.Parser();
 		p.allowTypes = allowTypes;
 		var program = p.parseString(x);
-		var bytes = hscript.Bytes.encode(program);
-		program = hscript.Bytes.decode(bytes);
-		var interp = new hscript.Interp();
+		var bytes = _hscript.Bytes.encode(program);
+		program = _hscript.Bytes.decode(bytes);
+		var interp = new _hscript.Interp();
 		if( vars != null )
 			for( v in Reflect.fields(vars) )
 				interp.variables.set(v,Reflect.field(vars,v));
@@ -168,7 +168,7 @@ class TestHScript extends TestCase {
 	static function main() {
 		#if ((haxe_ver < 4) && php)
 		// uncaught exception: The each() function is deprecated. This message will be suppressed on further calls (errno: 8192)
-		// in file: /Users/travis/build/andyli/hscript/bin/lib/Type.class.php line 178
+		// in file: /Users/travis/build/andyli/_hscript/bin/lib/Type.class.php line 178
 		untyped __php__("error_reporting(E_ALL ^ E_DEPRECATED);");
 		#end
 

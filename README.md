@@ -3,7 +3,7 @@ hscript-improved
 
 How to install
 ```
-haxelib git hscript-improved https://github.com/FNF-CNE-Devs/hscript-improved.git
+haxelib git hscript-improved https://github.com/glowsoony/hscript-improved.git
 ```
 
 To enable custom classes support you have to do this in project.xml
@@ -28,13 +28,13 @@ Usage
 
 ```haxe
 var expr = "var x = 4; 1 + 2 * x";
-var parser = new hscript.Parser();
+var parser = new _hscript.Parser();
 var ast = parser.parseString(expr);
-var interp = new hscript.Interp();
+var interp = new _hscript.Interp();
 trace(interp.execute(ast));
 ```
 
-In case of a parsing error an `hscript.Expr.Error` is thrown. You can use `parser.line` to check the line number.
+In case of a parsing error an `_hscript.Expr.Error` is thrown. You can use `parser.line` to check the line number.
 
 You can set some globaly accessible identifiers by using `interp.variables.set("name",value)`
 
@@ -49,9 +49,9 @@ var script = "
 		sum += Math.cos(a);
 	sum; 
 ";
-var parser = new hscript.Parser();
+var parser = new _hscript.Parser();
 var program = parser.parseString(script);
-var interp = new hscript.Interp();
+var interp = new _hscript.Interp();
 interp.variables.set("Math",Math); // share the Math class
 interp.variables.set("angles",[0,1,2,3]); // set the angles list
 trace( interp.execute(program) ); 
@@ -66,7 +66,7 @@ Advanced Usage
 
 When compiled with `-D hscriptPos` you will get fine error reporting at parsing time.
 
-You can subclass `hscript.Interp` to override behaviors for `get`, `set`, `call`, `fcall` and `cnew`.
+You can subclass `_hscript.Interp` to override behaviors for `get`, `set`, `call`, `fcall` and `cnew`.
 
 You can add more binary and unary operations to the parser by setting `opPriority`, `opRightAssoc` and `unops` content.
 
@@ -76,9 +76,9 @@ You can use `parser.allowTypes` to parse types for local vars, exceptions, funct
 
 You can use `parser.allowMetadata` to parse metadata before expressions on in anonymous types. Metadata are ignored by the interpreter.
 
-You can use `new hscript.Macro(pos).convert(ast)` to convert an hscript AST to a Haxe macros one.
+You can use `new _hscript.Macro(pos).convert(ast)` to convert an _hscript AST to a Haxe macros one.
 
-You can use `hscript.Checker` in order to type check and even get completion, using `haxe -xml` output for type information.
+You can use `_hscript.Checker` in order to type check and even get completion, using `haxe -xml` output for type information.
 
 Limitations
 -----------
@@ -94,20 +94,20 @@ Compared to Haxe, limitations are :
 Install
 -------
 
-In order to install Haxe Script, use `haxelib install hscript` and compile your program with `-lib hscript`.
+In order to install Haxe Script, use `haxelib install _hscript` and compile your program with `-lib _hscript`.
 
-These are the main required files in hscript :
+These are the main required files in _hscript :
 
-  - `hscript.Expr` : contains enums declarations
-  - `hscript.Parser` : a small parser that turns a string into an expression structure (AST)
-  - `hscript.Interp` : a small interpreter that execute the AST and returns the latest evaluated value
+  - `_hscript.Expr` : contains enums declarations
+  - `_hscript.Parser` : a small parser that turns a string into an expression structure (AST)
+  - `_hscript.Interp` : a small interpreter that execute the AST and returns the latest evaluated value
 
 Some other optional files :
   
-  - `hscript.Async` : converts Expr into asynchronous version
-  - `hscript.Bytes` : Expr serializer/unserializer
-  - `hscript.Checker` : type checking and completion for hscript Expr
-  - `hscript.Macro` : convert Haxe macro into hscript Expr
-  - `hscript.Printer` : convert hscript Expr to String
-  - `hscript.Tools` : utility functions (map/iter)
+  - `_hscript.Async` : converts Expr into asynchronous version
+  - `_hscript.Bytes` : Expr serializer/unserializer
+  - `_hscript.Checker` : type checking and completion for _hscript Expr
+  - `_hscript.Macro` : convert Haxe macro into _hscript Expr
+  - `_hscript.Printer` : convert _hscript Expr to String
+  - `_hscript.Tools` : utility functions (map/iter)
  

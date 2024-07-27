@@ -18,7 +18,7 @@ install:
   - haxelib install hxjava    > log.txt || type log.txt && cmd /C exit 1
   - haxelib install hxcs      > log.txt || type log.txt && cmd /C exit 1
   - haxelib install hx3compat > log.txt || type log.txt && cmd /C exit 1
-  - haxelib dev hscript .
+  - haxelib dev _hscript .
   - haxelib list
 
 build: off
