@@ -8,7 +8,7 @@
 			"name": "HashLink (launch)",
 			"request": "launch",
 			"type": "hl",
-			"hxml": "hscript.hxml",
+			"hxml": "_hscript.hxml",
 			"cwd": "${workspaceRoot}",
 			"preLaunchTask": "Build"
 		}

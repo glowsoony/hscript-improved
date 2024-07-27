@@ -19,8 +19,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-package hscript;
-import hscript.Expr;
+package _hscript;
+import _hscript.Expr;
 
 enum Token {
 	TEof;
@@ -183,7 +183,7 @@ class Parser {
 			idents[identChars.charCodeAt(i)] = true;
 	}
 
-	public function parseString( s : String, ?origin : String = "hscript" ) {
+	public function parseString( s : String, ?origin : String = "_hscript" ) {
 		initParser(origin);
 		if(s == "") s = "0;"; // fixing crash with empty file
 		input = s;
@@ -1333,7 +1333,7 @@ class Parser {
 
 	// ------------------------ module -------------------------------
 
-	public function parseModule( content : String, ?origin : String = "hscript" ) {
+	public function parseModule( content : String, ?origin : String = "_hscript" ) {
 		initParser(origin);
 		input = content;
 		readPos = 0;

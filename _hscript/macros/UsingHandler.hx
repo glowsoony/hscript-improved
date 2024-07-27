@@ -1,4 +1,4 @@
-package hscript.macros;
+package _hscript.macros;
 
 #if macro
 import Type.ValueType;
@@ -15,7 +15,7 @@ class UsingHandler {
 		#if !display
 		if(Context.defined("display")) return;
 		for(apply in Config.ALLOWED_ABSTRACT_AND_ENUM) {
-			Compiler.addGlobalMetadata(apply, '@:build(hscript.macros.UsingHandler.build())');
+			Compiler.addGlobalMetadata(apply, '@:build(_hscript.macros.UsingHandler.build())');
 		}
 		#end
 	}
